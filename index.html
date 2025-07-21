@@ -1,0 +1,65 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Commande Baeaubab Sénégal</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f9f9f9; }
+        .container { max-width: 600px; margin: auto; background: #fff; padding: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #007bff; }
+        .product { display: flex; align-items: center; margin-bottom: 15px; }
+        .product img { width: 70px; margin-right: 15px; border-radius: 5px; }
+        label { display: block; margin-top: 10px; font-weight: bold; }
+        input, select, textarea { width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px; }
+        button { background: #28a745; color: white; border: none; padding: 10px 20px; margin-top: 15px; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #218838; }
+        @media (max-width: 600px) {
+            .product { flex-direction: column; align-items: flex-start; }
+            .product img { margin-bottom: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Commande Baeaubab</h1>
+        <form id="orderForm">
+            <div class="product"><img src="images/pack330.jpg"><label>Packs 330ml (1300 FCFA)</label><input type="number" name="pack_330" min="0"></div>
+            <div class="product"><img src="images/pack570.jpg"><label>Packs 570ml (2260 FCFA)</label><input type="number" name="pack_570" min="0"></div>
+            <div class="product"><img src="images/pack1500.jpg"><label>Bouteilles 1,5L (1800 FCFA)</label><input type="number" name="bottle_1_5l" min="0"></div>
+            <div class="product"><img src="images/refroidisseur.jpg"><label>Refroidisseur (96000 FCFA)</label><input type="number" name="refroidisseur" min="0"></div>
+            <div class="product"><img src="images/bouteille19.jpg"><label>Bouteille 19L (2500 FCFA)</label><input type="number" name="bouteille_19l" min="0"></div>
+            <div class="product"><img src="images/consigne.jpg"><label>Consigne bouteille 19L (4500 FCFA)</label><input type="number" name="consigne" min="0"></div>
+            <div class="product"><img src="images/location.jpg"><label>Refroidisseur (location - 2500 FCFA/jour)</label><input type="number" name="refroidisseur_location" min="0"></div>
+            
+            <label>Nom complet</label><input type="text" name="nom" required>
+            <label>Numéro de téléphone</label><input type="tel" name="telephone" required>
+            <label>Adresse de livraison</label><textarea name="adresse" required></textarea>
+            <label>Date de livraison</label><input type="date" name="date_livraison" required>
+            <label>Heure souhaitée</label><input type="time" name="heure_livraison" required>
+            <label>Remarques</label><textarea name="remarques"></textarea>
+            
+            <button type="submit">Valider la commande</button>
+        </form>
+    </div>
+    <script>
+        document.getElementById("orderForm").addEventListener("submit", function(e) {
+            e.preventDefault();
+            const form = e.target;
+            const data = new FormData(form);
+            const entries = Object.fromEntries(data.entries());
+
+            fetch("https://script.google.com/macros/s/AKfycbw4G-tdzm46jpKPWWISkiO33YC75gMzZtbPulQSPErxKxtJxmtkuoswMvpn4GeDr5Oo/exec", {
+                method: "POST",
+                body: new URLSearchParams(entries)
+            }).then(() => {
+                const nom = encodeURIComponent(entries.nom);
+                const tel = encodeURIComponent(entries.telephone);
+                const message = `Bonjour, je viens de passer une commande : ${nom} - ${tel}`;
+                window.location.href = "https://wa.me/221786156206?text=" + message;
+            }).catch(() => alert("Erreur lors de l'envoi. Veuillez réessayer."));
+        });
+    </script>
+</body>
+</html>
