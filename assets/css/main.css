@@ -340,7 +340,7 @@ body.menu-open .menu__media img{transform:scale(1.16)}
   display:flex;flex-direction:column;justify-content:flex-end;
   padding:clamp(24px,3vw,46px);
 }
-.panel__bg{position:absolute;inset:0;z-index:0}
+.panel__bg{position:absolute;inset:-5%;z-index:0}
 .panel__bg img{width:100%;height:100%;object-fit:cover;transform:scale(1.08);transition:transform 1.4s var(--ease),filter 1s}
 .panel::after{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(to top,rgba(10,9,8,.93) 4%,rgba(10,9,8,.25) 52%,rgba(10,9,8,.6));transition:opacity .8s}
 .panel:hover{flex-grow:1.42}
@@ -461,7 +461,7 @@ body.menu-open .menu__media img{transform:scale(1.16)}
 
 /* ---------- 16. Partage ------------------------------------------------ */
 .share{position:relative;overflow:hidden;min-height:min(92svh,820px);display:flex;align-items:center}
-.share__bg{position:absolute;inset:-12% 0;z-index:0;will-change:transform}
+.share__bg{position:absolute;inset:-14% -5%;z-index:0;will-change:transform}
 .share__bg img{width:100%;height:120%;object-fit:cover}
 .share::after{content:"";position:absolute;inset:0;background:linear-gradient(92deg,rgba(10,9,8,.92) 4%,rgba(10,9,8,.55) 40%,rgba(10,9,8,.25) 72%)}
 .share__inner{position:relative;z-index:2;padding:clamp(80px,12vh,140px) var(--gutter);width:100%}
@@ -575,42 +575,6 @@ body.cart-open .audio-ctl,body.menu-open .audio-ctl{opacity:0;pointer-events:non
 @keyframes toastIn{from{opacity:0;transform:translateY(26px) scale(.96)}}
 @keyframes toastOut{to{opacity:0;transform:translateY(16px) scale(.97)}}
 
-/* ---------- 21. Responsive -------------------------------------------- */
-@media (max-width:1100px){
-  .shop__grid{grid-template-columns:1fr}
-  .sec-head{grid-template-columns:1fr}
-  .footer__grid{grid-template-columns:1fr 1fr}
-  .menu{grid-template-columns:1fr}
-  .menu__aside{display:none}
-  .stats{grid-template-columns:repeat(2,1fr)}
-}
-@media (max-width:860px){
-  :root{--header-h:70px}
-  .nav{display:none}
-  .rail{display:none}
-  .sec-ind{display:none}
-  .split{flex-direction:column;min-height:0}
-  .panel{min-height:66svh}
-  .panel + .panel{border-left:0;border-top:1px solid rgba(244,237,228,.2)}
-  .panel:hover{flex-grow:1}
-  .split__over{position:static;padding:clamp(60px,9vh,90px) var(--gutter) 1.6rem;background:var(--ink)}
-  .split__foot{display:none}
-  .steps{position:static;grid-template-columns:1fr;gap:1rem;margin-top:2.4rem}
-  .ritual__inner{padding-bottom:clamp(40px,6vh,60px)}
-    .footer__grid{grid-template-columns:1fr}
-  .marquee span{font-size:1.3rem}
-  .shop__stage{min-height:0}
-  .shop__slides{max-height:none}
-  .drawer{width:100%}
-}
-@media (max-width:520px){
-  .stats{grid-template-columns:1fr}
-  .citem{grid-template-columns:62px 1fr}
-  .citem__price{grid-column:2;text-align:left}
-  .field-2{grid-template-columns:1fr}
-}
-
-
 /* ---------- 23. Défilement fluide ------------------------------------- */
 html.has-smooth{scrollbar-gutter:stable}
 html.has-smooth #smooth{position:fixed;top:0;left:0;width:100%;will-change:transform}
@@ -683,6 +647,42 @@ body.at-footer .sec-ind{opacity:0;transform:translateY(14px)}
 .footer__brand b .ltr{display:inline-block;transform:translateY(105%);transition:transform .9s var(--ease);transition-delay:calc(var(--d,0) * 1ms)}
 .footer__brand b{display:block;overflow:hidden;padding-bottom:.08em}
 .is-inview.footer__brand b .ltr{transform:none}
+
+/* ---------- 21. Responsive -------------------------------------------- */
+@media (max-width:1100px){
+  .shop__grid{grid-template-columns:1fr}
+  .sec-head{grid-template-columns:1fr}
+  .footer__grid{grid-template-columns:1fr 1fr}
+  .menu{grid-template-columns:1fr}
+  .menu__aside{display:none}
+  .stats{grid-template-columns:repeat(2,1fr)}
+}
+@media (max-width:860px){
+  :root{--header-h:70px}
+  .nav{display:none}
+  .rail{display:none}
+  .sec-ind{display:none}
+  .split{flex-direction:column;min-height:0}
+  .panel{min-height:66svh}
+  .panel + .panel{border-left:0;border-top:1px solid rgba(244,237,228,.2)}
+  .panel:hover{flex-grow:1}
+  .split__over{position:static;padding:clamp(60px,9vh,90px) var(--gutter) 1.6rem;background:var(--ink)}
+  .split__foot{display:none}
+  .steps{position:static;grid-template-columns:1fr;gap:1rem;margin-top:2.4rem}
+  .ritual__inner{padding-bottom:clamp(40px,6vh,60px)}
+    .footer__grid{grid-template-columns:1fr}
+  .marquee span{font-size:1.3rem}
+  .shop__stage{min-height:0}
+  .shop__slides{max-height:none}
+  .drawer{width:100%}
+}
+@media (max-width:520px){
+  .stats{grid-template-columns:1fr}
+  .citem{grid-template-columns:62px 1fr}
+  .citem__price{grid-column:2;text-align:left}
+  .field-2{grid-template-columns:1fr}
+}
+
 
 /* ---------- 22. Reduced motion ---------------------------------------- */
 @media (prefers-reduced-motion:reduce){

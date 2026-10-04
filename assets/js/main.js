@@ -49,6 +49,16 @@ const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const money = n => new Intl.NumberFormat('fr-FR').format(n) + ' ' + CONFIG.currency;
 const pad = n => String(n).padStart(2, '0');
+/* scrollIntoView est inopérant quand #smooth est en position fixe :
+   on calcule la position réelle nous-mêmes. */
+const goToSection = (sel, smooth = true) => {
+  const t = typeof sel === 'string' ? $(sel) : sel;
+  if (!t) return;
+  scrollTo({
+    top: t.getBoundingClientRect().top + SCROLL.y - (innerWidth > 860 ? 70 : 60),
+    behavior: smooth && !REDUCED ? 'smooth' : 'auto'
+  });
+};
 
 /* =========================================================================
    0. DÉFILEMENT FLUIDE (bureau) — base de toutes les animations de scroll
@@ -523,7 +533,7 @@ function renderCart(view) {
         <button class="btn btn--ghost" id="goShop"><span>Voir nos cafés</span></button>
       </div>`;
     foot.innerHTML = '';
-    $('#goShop')?.addEventListener('click', () => { closeCart(); $('#boutique').scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth' }); });
+    $('#goShop')?.addEventListener('click', () => { closeCart(); setTimeout(() => goToSection('#boutique'), 120); });
     return;
   }
 
