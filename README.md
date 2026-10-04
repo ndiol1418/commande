@@ -9,6 +9,7 @@ index.html              la page du site (sections 01 → 05 + boutique)
 assets/css/main.css     design system, mises en page et animations
 assets/js/main.js       boutique, panier, commande, animations pilotées au scroll
 assets/img/*.webp       photos (issues des maquettes)
+assets/audio/           la bande-son, coupée à 58 s et jouée en boucle
 assets/fonts/           Anton + Space Grotesk auto-hébergées (pas d'appel Google)
 baobab.html             l'ancien formulaire de commande Baobab, conservé tel quel
 ```
@@ -78,5 +79,13 @@ n'est perdu.
 - `prefers-reduced-motion` est respecté : les animations se coupent pour les
   personnes qui le demandent dans leur système.
 - Le panier est conservé dans `localStorage` (clé `dm-cart-v1`).
-- Le « film » est une séquence d'images enchaînées : le jour où une vraie vidéo
-  existe, elle remplace les `<figure>` de `#film` et les `.hero__frame`.
+- Le héros enchaîne trois plans en fondu (pas de vidéo, pas de lecteur).
+- La bande-son (`assets/audio/ambiance.webm` + `.mp3` de secours) dure 58 s et
+  tourne en boucle. Pour la remplacer : refaire les deux fichiers avec
+  `ffmpeg -i source.mp3 -t 58 …`. Les navigateurs interdisent le son avant un
+  geste de l'internaute : la musique démarre donc au premier clic, et le bouton
+  en bas à droite permet de la couper (le choix est mémorisé).
+- Défilement fluide, inclinaison des images selon la vitesse, inclinaison 3D du
+  paquet, indicateur de section, grain animé et volet orange de transition sont
+  actifs sur ordinateur ; sur mobile et si « réduire les animations » est activé,
+  le site revient à un défilement natif et sobre.

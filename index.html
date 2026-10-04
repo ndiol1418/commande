@@ -29,8 +29,12 @@
   <div class="loader__num" id="loaderNum">0</div>
 </div>
 
+<div class="grain" aria-hidden="true"></div>
+<div class="wipe" id="wipe" aria-hidden="true"></div>
+<div class="cursor-trail" id="cursorTrail" aria-hidden="true"></div>
 <div class="cursor" id="cursor"><span></span></div>
 <div class="scroll-progress" id="scrollProgress"></div>
+<div class="sec-ind" id="secInd" aria-hidden="true"><b>01</b><i></i><span>Le rituel</span></div>
 
 <!-- ============ HEADER ============ -->
 <header class="header" id="header">
@@ -70,6 +74,7 @@
   </div>
 </div>
 
+<div id="smooth">
 <main id="top">
 
 <!-- ============ 01 — HERO ============ -->
@@ -90,28 +95,12 @@
     <p class="lead" data-reveal style="--d:450">Une intensité qui se découvre. Un rituel qui se partage.</p>
     <div class="hero__cta" data-reveal style="--d:600">
       <a href="#boutique" class="btn btn--solid" data-magnetic><span>Explorer nos cafés <svg class="arrow" width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 11 11 2M4 2h7v7"/></svg></span></a>
-      <div class="play-row">
-        <button class="play" data-film aria-label="Voir le film"><svg viewBox="0 0 14 16"><path d="M0 0v16l14-8z"/></svg></button>
-        <span>Voir le film</span>
-      </div>
+      <a href="#rituel" class="link-u">Découvrir le rituel</a>
     </div>
   </div>
 
   <div class="hero__bar">
-    <div class="player">
-      <button class="player__toggle" id="heroToggle" aria-label="Lecture / pause de la séquence">
-        <svg class="ic-pause" viewBox="0 0 14 14"><rect width="4" height="14"/><rect x="9" width="4" height="14"/></svg>
-        <svg class="ic-play" viewBox="0 0 14 14"><path d="M0 0v14l13-7z"/></svg>
-      </button>
-      <span id="heroLabel">01 — Le rituel</span>
-      <span class="track"><i id="heroTrack"></i></span>
-      <span class="time"><span id="heroTime">00:00</span> / 00:32</span>
-    </div>
     <a href="#origine" class="hero__scroll">Faites défiler <svg viewBox="0 0 12 22"><path d="M6 0v20M1 15l5 5 5-5"/></svg></a>
-    <button class="sound" id="soundBtn" aria-pressed="false">
-      <svg viewBox="0 0 20 20"><path d="M4 7h3l4-3v12l-4-3H4z"/><path d="M14 7a4 4 0 0 1 0 6"/></svg>
-      <span id="soundLabel">Activer le son</span>
-    </button>
   </div>
 
   <div class="rail" id="rail" aria-hidden="true">
@@ -156,7 +145,7 @@
   </div>
 
   <article class="panel" data-panel>
-    <div class="panel__bg" data-parallax="0.08"><img src="assets/img/grain-cafe.webp" alt="Grains de café torréfiés" loading="lazy"></div>
+    <div data-skew class="panel__bg" data-parallax="0.08"><img src="assets/img/grain-cafe.webp" alt="Grains de café torréfiés" loading="lazy"></div>
     <div class="panel__body">
       <div class="panel__top">
         <b>01</b><em>Le café</em><hr>
@@ -171,7 +160,7 @@
   </article>
 
   <article class="panel" data-panel>
-    <div class="panel__bg" data-parallax="0.12"><img src="assets/img/diar.webp" alt="Gousses de diar, le poivre de Guinée" loading="lazy"></div>
+    <div data-skew class="panel__bg" data-parallax="0.12"><img src="assets/img/diar.webp" alt="Gousses de diar, le poivre de Guinée" loading="lazy"></div>
     <div class="panel__body">
       <div class="panel__top">
         <b>02</b><em>Le diar</em><hr>
@@ -277,10 +266,7 @@
       <span class="mask"><span style="--d:120">la différence<span class="dot">.</span></span></span>
     </h2>
     <p class="lead" data-reveal style="--d:240">Découvrez le rituel du café Touba.</p>
-    <div class="play-row" data-reveal style="--d:360;margin-top:clamp(24px,3vh,40px)">
-      <button class="play" data-film aria-label="Lancer le film"><svg viewBox="0 0 14 16"><path d="M0 0v16l14-8z"/></svg></button>
-      <span>Lancer le film</span>
-    </div>
+    <a href="#boutique" class="btn btn--ghost" data-reveal data-magnetic style="--d:360;margin-top:clamp(24px,3vh,40px)"><span>Commander le café Touba <svg class="arrow" width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 11 11 2M4 2h7v7"/></svg></span></a>
   </div>
   <div class="steps" id="steps">
     <button class="step is-on" data-step="0"><span class="step__line"><i></i></span><b>01 — Préparer</b><span>Moudre le café avec le diar, doser généreusement.</span></button>
@@ -291,7 +277,7 @@
 
 <!-- ============ 05 — PARTAGE ============ -->
 <section class="share" id="partage" data-section="05">
-  <div class="share__bg" data-parallax="0.16"><img src="assets/img/partage-portrait.webp" alt="Trois personnes partagent un café Touba" loading="lazy"></div>
+  <div data-skew class="share__bg" data-parallax="0.16"><img src="assets/img/partage-portrait.webp" alt="Trois personnes partagent un café Touba" loading="lazy"></div>
   <div class="share__inner wrap">
     <p class="eyebrow" data-reveal="fade"><b>(05)</b> Le partage</p>
     <h2 class="display" data-reveal-group>
@@ -301,8 +287,14 @@
     <p class="lead" data-reveal style="--d:240">Autour d'une tasse, le plaisir d'être ensemble.</p>
     <a href="#boutique" class="btn btn--solid" data-reveal data-magnetic style="--d:380;margin-top:clamp(22px,3vh,38px)"><span>Retrouver nos cafés <svg class="arrow" width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 11 11 2M4 2h7v7"/></svg></span></a>
   </div>
-  <button class="play share__play" data-film aria-label="Voir le film"><svg viewBox="0 0 14 16"><path d="M0 0v16l14-8z"/></svg></button>
 </section>
+
+<div class="marquee marquee--rev" id="marquee2" aria-hidden="true">
+  <div class="marquee__row">
+    <span>Commandez par WhatsApp</span><span>Livraison Dakar</span><span>250 g &amp; 500 g</span><span>Le rituel se partage</span>
+    <span>Commandez par WhatsApp</span><span>Livraison Dakar</span><span>250 g &amp; 500 g</span><span>Le rituel se partage</span>
+  </div>
+</div>
 
 </main>
 
@@ -310,7 +302,7 @@
 <footer class="footer" id="contact">
   <div class="wrap footer__grid">
     <div class="footer__brand" data-reveal>
-      <b>Darou Minam</b><i>Cafe</i>
+      <b data-letters>Darou Minam</b><i>Cafe</i>
       <p>Le caractère du café Touba.</p>
     </div>
     <div class="fcol" data-reveal style="--d:120">
@@ -331,6 +323,7 @@
     <a href="#top" class="to-top">Retour en haut <svg viewBox="0 0 12 18"><path d="M6 18V1M1 6l5-5 5 5"/></svg></a>
   </div>
 </footer>
+</div>
 
 <!-- ============ CART ============ -->
 <div class="scrim" id="scrim"></div>
@@ -344,21 +337,16 @@
   <div class="drawer__foot" id="drawerFoot"></div>
 </aside>
 
-<!-- ============ FILM ============ -->
-<div class="film" id="film" role="dialog" aria-modal="true" aria-label="Film">
-  <div class="film__stage">
-    <div class="film__track"><i id="filmTrack"></i></div>
-    <figure class="is-on"><img src="assets/img/hero-pour.webp" alt=""></figure>
-    <figure><img src="assets/img/grain-macro.webp" alt=""></figure>
-    <figure><img src="assets/img/rituel-filtre.webp" alt=""></figure>
-    <figure><img src="assets/img/partage-bande.webp" alt=""></figure>
-    <div class="film__cap">
-      <h3 id="filmTitle">Le goût.</h3>
-      <p id="filmText">Café torréfié et diar, l'intensité du café Touba.</p>
-    </div>
-  </div>
-  <button class="x film__close" id="closeFilm" aria-label="Fermer le film"><svg viewBox="0 0 13 13" fill="none"><path d="M1 1l11 11M12 1L1 12"/></svg></button>
-</div>
+<!-- ============ AMBIANCE SONORE ============ -->
+<audio id="ambient" loop preload="auto" playsinline>
+  <source src="assets/audio/ambiance.webm" type="audio/webm">
+  <source src="assets/audio/ambiance.mp3" type="audio/mpeg">
+</audio>
+
+<button class="audio-ctl" id="soundBtn" aria-pressed="false" aria-label="Activer ou couper la musique">
+  <span class="audio-ctl__eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+  <span id="soundLabel">Activer le son</span>
+</button>
 
 <div class="toasts" id="toasts" aria-live="polite"></div>
 

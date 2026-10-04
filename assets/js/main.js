@@ -51,6 +51,37 @@ const money = n => new Intl.NumberFormat('fr-FR').format(n) + ' ' + CONFIG.curre
 const pad = n => String(n).padStart(2, '0');
 
 /* =========================================================================
+   0. DÉFILEMENT FLUIDE (bureau) — base de toutes les animations de scroll
+   ========================================================================= */
+const SCROLL = { y: window.scrollY, v: 0 };
+
+(function smoothScroll() {
+  const wrap = document.getElementById('smooth');
+  const coarse = matchMedia('(pointer:coarse)').matches;
+  if (!wrap || REDUCED || coarse) {
+    addEventListener('scroll', () => {
+      SCROLL.v = window.scrollY - SCROLL.y;
+      SCROLL.y = window.scrollY;
+    }, { passive: true });
+    return;
+  }
+  document.documentElement.classList.add('has-smooth');
+  const setH = () => { document.body.style.height = wrap.getBoundingClientRect().height + 'px'; };
+  new ResizeObserver(setH).observe(wrap);
+  setH();
+  let cur = window.scrollY;
+  (function loop() {
+    const target = window.scrollY;
+    cur += (target - cur) * .095;
+    if (Math.abs(target - cur) < .06) cur = target;
+    SCROLL.v = target - cur;
+    SCROLL.y = cur;
+    wrap.style.transform = `translate3d(0,${-cur.toFixed(2)}px,0)`;
+    requestAnimationFrame(loop);
+  })();
+})();
+
+/* =========================================================================
    1. PRELOADER
    ========================================================================= */
 (function loader() {
@@ -95,13 +126,13 @@ const pad = n => String(n).padStart(2, '0');
   })();
 
   const label = el.firstElementChild;
-  const hot = '[data-film], .play, .panel, [data-panel-toggle], .slide, .shop__stage';
+  const hot = '.panel, [data-panel-toggle], .slide, .shop__stage';
   const small = 'a, button, input, .opt, .qty';
   document.addEventListener('pointerover', e => {
     const h = e.target.closest(hot), s = e.target.closest(small);
     el.classList.toggle('is-hot', !!h && !s);
     el.classList.toggle('is-small', !h && !!s);
-    if (h && !s) label.textContent = h.matches('[data-film], .play') ? 'Play' : (h.closest('.shop__stage') ? 'Glisser' : 'Voir');
+    if (h && !s) label.textContent = h.closest('.shop__stage') ? 'Glisser' : 'Voir';
   });
 
   /* magnétisme */
@@ -162,26 +193,40 @@ const io = new IntersectionObserver((entries) => {
 $$('[data-reveal], [data-reveal-group], .mask, .imgwrap, .stat').forEach(el => io.observe(el));
 
 /* =========================================================================
-   4. PARALLAXE + PROGRESSION
+   4. PARALLAXE, INCLINAISON À LA VITESSE, SORTIE DU HÉROS, PROGRESSION
    ========================================================================= */
-(function parallax() {
-  const items = $$('[data-parallax]').map(el => ({ el, k: parseFloat(el.dataset.parallax) || .1 }));
+(function scrollMotion() {
+  const items = $$('[data-parallax]').map(el => ({
+    el, k: parseFloat(el.dataset.parallax) || .1, skew: el.hasAttribute('data-skew')
+  }));
   const prog = $('#scrollProgress');
-  let ticking = false;
-  const run = () => {
+  const heroInner = $('.hero__inner'), heroMedia = $('#heroMedia');
+  let skew = 0;
+
+  (function run() {
     const vh = innerHeight;
-    if (!REDUCED) items.forEach(({ el, k }) => {
-      const r = el.getBoundingClientRect();
-      if (r.bottom < -200 || r.top > vh + 200) return;
-      el.style.transform = `translate3d(0,${(r.top + r.height / 2 - vh / 2) * -k}px,0)`;
-    });
+
+    if (!REDUCED) {
+      skew += (clamp(SCROLL.v * .055, -3, 3) - skew) * .12;
+      items.forEach(({ el, k, skew: sk }) => {
+        const r = el.getBoundingClientRect();
+        if (r.bottom < -250 || r.top > vh + 250) return;
+        const y = (r.top + r.height / 2 - vh / 2) * -k;
+        el.style.transform = `translate3d(0,${y.toFixed(1)}px,0)` + (sk ? ` skewY(${skew.toFixed(2)}deg)` : '');
+      });
+
+      if (heroInner) {
+        const p = clamp(SCROLL.y / Math.max(vh, 1), 0, 1);
+        heroInner.style.transform = `translate3d(0,${(p * 130).toFixed(1)}px,0)`;
+        heroInner.style.opacity = String(clamp(1 - p * 1.25, 0, 1));
+        if (heroMedia) heroMedia.style.transform = `scale(${(1 + p * .14).toFixed(3)})`;
+      }
+    }
+
     const h = document.documentElement.scrollHeight - vh;
-    prog.style.width = (h > 0 ? (scrollY / h) * 100 : 0) + '%';
-    ticking = false;
-  };
-  addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(run); } }, { passive: true });
-  addEventListener('resize', run);
-  run();
+    prog.style.width = (h > 0 ? (SCROLL.y / h) * 100 : 0) + '%';
+    requestAnimationFrame(run);
+  })();
 })();
 
 /* =========================================================================
@@ -191,7 +236,7 @@ $$('[data-reveal], [data-reveal-group], .mask, .imgwrap, .stat').forEach(el => i
   const head = $('#header');
   let last = 0;
   addEventListener('scroll', () => {
-    const y = scrollY;
+    const y = window.scrollY;
     head.classList.toggle('is-solid', y > 40);
     head.classList.toggle('is-hidden', y > 400 && y > last && !document.body.classList.contains('menu-open'));
     last = y;
@@ -216,7 +261,7 @@ $$('[data-reveal], [data-reveal-group], .mask, .imgwrap, .stat').forEach(el => i
     const t = document.querySelector(id);
     if (!t) return;
     e.preventDefault();
-    const top = id === '#top' ? 0 : t.getBoundingClientRect().top + scrollY - (innerWidth > 860 ? 70 : 60);
+    const top = id === '#top' ? 0 : t.getBoundingClientRect().top + SCROLL.y - (innerWidth > 860 ? 70 : 60);
     scrollTo({ top, behavior: REDUCED ? 'auto' : 'smooth' });
   }));
 
@@ -239,7 +284,7 @@ $$('[data-reveal], [data-reveal-group], .mask, .imgwrap, .stat').forEach(el => i
   const map = ['hero', 'boutique', 'rituel'];
   btns.forEach(b => b.addEventListener('click', () => {
     const t = $('#' + b.dataset.goto);
-    if (t) scrollTo({ top: t.offsetTop, behavior: REDUCED ? 'auto' : 'smooth' });
+    if (t) scrollTo({ top: t.getBoundingClientRect().top + SCROLL.y, behavior: REDUCED ? 'auto' : 'smooth' });
   }));
   const rio = new IntersectionObserver(es => es.forEach(en => {
     if (!en.isIntersecting) return;
@@ -271,43 +316,20 @@ $$('[data-reveal], [data-reveal-group], .mask, .imgwrap, .stat').forEach(el => i
 })();
 
 /* =========================================================================
-   8. SÉQUENCE HÉRO (le « film » de la page d'accueil)
+   8. HÉRO — fondu enchaîné des plans
    ========================================================================= */
-const FRAMES = [
-  { t: 'Le goût.', s: 'Café torréfié et diar, l\'intensité du café Touba.', label: '01 — Le rituel' },
-  { t: 'Le geste.', s: 'L\'eau versée lentement, les arômes qui se révèlent.', label: '02 — La matière' },
-  { t: 'Le partage.', s: 'Les verres qui circulent, le lien qui se noue.', label: '03 — Le partage' }
-];
-
-(function heroPlayer() {
+(function heroFrames() {
   const hero = $('#hero'); if (!hero) return;
   const frames = $$('.hero__frame', hero);
-  const track = $('#heroTrack'), time = $('#heroTime'), label = $('#heroLabel'), toggle = $('#heroToggle');
-  const TOTAL = 32, STEP = TOTAL / frames.length;
-  let t = 0, paused = REDUCED, visible = true, last = performance.now();
-
-  new IntersectionObserver(e => visible = e[0].isIntersecting, { threshold: .05 }).observe(hero);
-
-  toggle.addEventListener('click', () => {
-    paused = !paused;
-    hero.classList.toggle('is-paused', paused);
-    beep(paused ? 220 : 440);
-  });
-
-  (function loop(now) {
-    const dt = clamp((now - last) / 1000, 0, .25); last = now;
-    if (!paused && visible) {
-      t = (t + dt) % TOTAL;
-      const i = clamp(Math.floor(t / STEP), 0, frames.length - 1);
-      frames.forEach((f, k) => f.classList.toggle('is-on', k === i));
-      if (label.textContent !== FRAMES[i].label) label.textContent = FRAMES[i].label;
-      track.style.transform = `scaleX(${t / TOTAL})`;
-      time.textContent = pad(Math.floor(t / 60)) + ':' + pad(Math.floor(t % 60));
-    }
-    requestAnimationFrame(loop);
-  })(performance.now());
-
-  hero.classList.toggle('is-paused', paused);
+  if (frames.length < 2 || REDUCED) return;
+  let i = 0, visible = true, timer = null;
+  const next = () => {
+    i = (i + 1) % frames.length;
+    frames.forEach((f, k) => f.classList.toggle('is-on', k === i));
+  };
+  const play = () => { clearInterval(timer); timer = setInterval(() => { if (visible) next(); }, 7000); };
+  new IntersectionObserver(e => { visible = e[0].isIntersecting; }, { threshold: .05 }).observe(hero);
+  play();
 })();
 
 /* =========================================================================
@@ -319,7 +341,6 @@ $$('[data-panel]').forEach(panel => {
     const was = panel.classList.contains('is-open');
     $$('[data-panel]').forEach(p => p.classList.remove('is-open'));
     panel.classList.toggle('is-open', !was);
-    beep(was ? 300 : 520);
   };
   btn?.addEventListener('click', e => { e.stopPropagation(); open(); });
   panel.addEventListener('click', open);
@@ -374,7 +395,7 @@ $$('[data-panel]').forEach(panel => {
   const play = () => { clearInterval(timer); if (REDUCED) return; timer = setInterval(() => show(i + 1, true), DUR); show(i, true); };
   const stop = () => clearInterval(timer);
 
-  steps.forEach((s, k) => s.addEventListener('click', () => { show(k, true); play(); beep(400 + k * 90); }));
+  steps.forEach((s, k) => s.addEventListener('click', () => { show(k, true); play();}));
   new IntersectionObserver(e => {
     live = e[0].isIntersecting;
     live ? play() : stop();
@@ -402,7 +423,7 @@ let current = 0;
 
   $('#shopTotal').textContent = pad(PRODUCTS.length);
 
-  window.goTo = (n, silent) => {
+  window.goTo = (n) => {
     current = (n + PRODUCTS.length) % PRODUCTS.length;
     const p = PRODUCTS[current];
     $$('.slide', slides).forEach((s, k) => s.classList.toggle('is-on', k === current));
@@ -415,7 +436,6 @@ let current = 0;
     $('#shopIndex').textContent = pad(current + 1);
     $('#shopGhost').textContent = p.weight;
     $('#qty').value = 1;
-    if (!silent) beep(520);
   };
 
   $('#prevBtn').addEventListener('click', () => goTo(current - 1));
@@ -429,7 +449,6 @@ let current = 0;
     const inp = $('#qty');
     inp.value = clamp((+inp.value || 1) + (+b.dataset.qty), 1, 99);
     inp.animate([{ transform: 'scale(1.18)' }, { transform: 'scale(1)' }], { duration: 320, easing: 'cubic-bezier(.19,1,.22,1)' });
-    beep(+b.dataset.qty > 0 ? 600 : 380);
   }));
 
   /* glisser / clavier */
@@ -449,7 +468,7 @@ let current = 0;
     if (e.key === 'ArrowLeft') goTo(current - 1);
   });
 
-  goTo(0, true);
+  goTo(0);
 })();
 
 /* =========================================================================
@@ -537,7 +556,7 @@ function renderCart(view) {
   $$('[data-d]', body).forEach(b => b.addEventListener('click', () => {
     const i = +b.dataset.ci;
     cart[i].qty = clamp(cart[i].qty + (+b.dataset.d), 1, 99);
-    saveCart(); renderCart(); beep(520);
+    saveCart(); renderCart();
   }));
   $$('input[data-ci]', body).forEach(inp => inp.addEventListener('change', () => {
     cart[+inp.dataset.ci].qty = clamp(parseInt(inp.value, 10) || 1, 1, 99);
@@ -561,7 +580,6 @@ function addToCart(product, qty, fromEl) {
   setTimeout(() => $('#cartBtn').classList.remove('is-bump'), 520);
   if (fromEl) flyToCart(fromEl);
   toast(`${product.brand} ${product.weight} ajouté au panier`);
-  beep(680);
 }
 
 function flyToCart(srcImg) {
@@ -583,8 +601,8 @@ const closeCart = () => document.body.classList.remove('cart-open', 'is-locked')
 
 $('#cartBtn').addEventListener('click', openCart);
 $('#closeCart').addEventListener('click', closeCart);
-$('#scrim').addEventListener('click', () => { closeCart(); closeFilm(); });
-addEventListener('keydown', e => { if (e.key === 'Escape') { closeCart(); closeFilm(); } });
+$('#scrim').addEventListener('click', closeCart);
+addEventListener('keydown', e => { if (e.key === 'Escape') closeCart(); });
 
 $('#addBtn').addEventListener('click', () => {
   addToCart(PRODUCTS[current], clamp(parseInt($('#qty').value, 10) || 1, 1, 99), $('.slide.is-on img'));
@@ -656,45 +674,67 @@ async function submitOrder() {
   $('#drawerCount').textContent = '(0)';
   renderCart('done');
   toast('Commande transmise ✓');
-  beep(760); setTimeout(() => beep(980), 140);
   if (!win) location.href = url;
 }
 
 /* =========================================================================
-   15. FILM
+   15. AMBIANCE SONORE — la bande-son fournie, en boucle (58 s)
    ========================================================================= */
-const FILM = [
-  { t: 'Le goût.', s: 'Café torréfié et diar, l\'intensité du café Touba.' },
-  { t: 'La matière.', s: 'Le grain, moulu avec le poivre de Guinée.' },
-  { t: 'Le geste.', s: 'L\'eau versée lentement, les arômes révélés.' },
-  { t: 'Le partage.', s: 'Les verres circulent, le lien se noue.' }
-];
+(function ambient() {
+  const audio = $('#ambient'), btn = $('#soundBtn'), label = $('#soundLabel');
+  if (!audio || !btn) return;
 
-let filmTimer = null;
-function openFilm() {
-  document.body.classList.add('film-open', 'is-locked');
-  const figs = $$('#film figure'), bar = $('#filmTrack');
-  let i = 0;
-  const show = () => {
-    figs.forEach((f, k) => f.classList.toggle('is-on', k === i));
-    $('#filmTitle').textContent = FILM[i].t;
-    $('#filmText').textContent = FILM[i].s;
-    bar.style.transition = 'none'; bar.style.width = '0%';
-    requestAnimationFrame(() => { bar.style.transition = 'width 5s linear'; bar.style.width = '100%'; });
-    i = (i + 1) % figs.length;
+  const KEY = 'dm-sound';
+  const VOL = .55;
+  let wanted = true;                      // le son est souhaité par défaut
+  try { wanted = localStorage.getItem(KEY) !== 'off'; } catch (e) {}
+
+  const fade = (to, ms) => {
+    const from = audio.volume, t0 = performance.now();
+    return new Promise(done => (function step(now) {
+      const k = clamp((now - t0) / ms, 0, 1);
+      audio.volume = clamp(from + (to - from) * k, 0, 1);
+      k < 1 ? requestAnimationFrame(step) : done();
+    })(t0));
   };
-  show();
-  clearInterval(filmTimer);
-  if (!REDUCED) filmTimer = setInterval(show, 5000);
-  setTimeout(() => $('#closeFilm').focus(), 300);
-}
-function closeFilm() {
-  document.body.classList.remove('film-open');
-  if (!document.body.classList.contains('cart-open')) document.body.classList.remove('is-locked');
-  clearInterval(filmTimer);
-}
-$$('[data-film]').forEach(b => b.addEventListener('click', openFilm));
-$('#closeFilm').addEventListener('click', closeFilm);
+
+  const paint = on => {
+    btn.classList.toggle('is-on', on);
+    btn.setAttribute('aria-pressed', String(on));
+    label.textContent = on ? 'Couper le son' : 'Activer le son';
+  };
+
+  const start = () => {
+    audio.volume = 0;
+    return audio.play().then(() => { paint(true); return fade(VOL, 1400); });
+  };
+  const stop = () => fade(0, 500).then(() => { audio.pause(); paint(false); });
+
+  paint(false);
+
+  /* le navigateur refuse souvent de démarrer un son sans geste :
+     on tente, puis on repart au premier clic / appui touche. */
+  const armed = () => {
+    if (!wanted || !audio.paused) return;
+    start().catch(() => {});
+  };
+  if (wanted) start().catch(() => {
+    ['pointerdown', 'keydown', 'touchstart'].forEach(ev =>
+      addEventListener(ev, armed, { once: true, passive: true }));
+  });
+
+  btn.addEventListener('click', () => {
+    wanted = audio.paused;
+    try { localStorage.setItem(KEY, wanted ? 'on' : 'off'); } catch (e) {}
+    wanted ? start().catch(() => toast('Votre navigateur bloque le son : réessayez.')) : stop();
+  });
+
+  /* on se tait quand l'onglet passe en arrière-plan */
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) audio.pause();
+    else if (wanted && audio.paused) audio.play().catch(() => {});
+  });
+})();
 
 /* =========================================================================
    16. TOASTS
@@ -709,31 +749,110 @@ function toast(msg) {
 }
 
 /* =========================================================================
-   17. SON (clics discrets, désactivés par défaut)
-   ========================================================================= */
-let audioOn = false, actx = null;
-function beep(freq) {
-  if (!audioOn) return;
-  try {
-    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
-    const o = actx.createOscillator(), g = actx.createGain();
-    o.type = 'sine'; o.frequency.value = freq;
-    g.gain.setValueAtTime(.0001, actx.currentTime);
-    g.gain.exponentialRampToValueAtTime(.05, actx.currentTime + .01);
-    g.gain.exponentialRampToValueAtTime(.0001, actx.currentTime + .18);
-    o.connect(g).connect(actx.destination);
-    o.start(); o.stop(actx.currentTime + .2);
-  } catch (e) {}
-}
-$('#soundBtn')?.addEventListener('click', e => {
-  audioOn = !audioOn;
-  e.currentTarget.setAttribute('aria-pressed', audioOn);
-  $('#soundLabel').textContent = audioOn ? 'Couper le son' : 'Activer le son';
-  if (audioOn) { beep(520); setTimeout(() => beep(780), 120); }
-});
-
-/* =========================================================================
    18. DIVERS
    ========================================================================= */
 $('#year').textContent = new Date().getFullYear();
 renderCart();
+
+/* =========================================================================
+   19. COUCHE DE MOUVEMENT — traîne, indicateur, volet, inclinaison 3D
+   ========================================================================= */
+
+/* --- traîne du curseur -------------------------------------------------- */
+(function trail() {
+  const el = $('#cursorTrail');
+  if (!el || REDUCED || !matchMedia('(hover:hover) and (pointer:fine)').matches) return;
+  let x = innerWidth / 2, y = innerHeight / 2, cx = x, cy = y;
+  addEventListener('pointermove', e => { x = e.clientX; y = e.clientY; el.classList.add('is-live'); }, { passive: true });
+  document.addEventListener('pointerover', e => {
+    el.classList.toggle('is-wide', !!e.target.closest('.panel, .shop__stage, .slide'));
+  });
+  (function loop() {
+    cx += (x - cx) * .085; cy += (y - cy) * .085;
+    el.style.transform = `translate3d(${cx}px,${cy}px,0) translate(-50%,-50%)`;
+    requestAnimationFrame(loop);
+  })();
+})();
+
+/* --- indicateur de section --------------------------------------------- */
+(function indicator() {
+  const el = $('#secInd');
+  if (!el || REDUCED) return;
+  const num = el.querySelector('b'), lbl = el.querySelector('span');
+  const MAP = [
+    ['hero', '01', 'Le rituel'], ['origine', '02', 'Les ingrédients'],
+    ['boutique', '03', 'Nos cafés'], ['rituel', '04', 'La préparation'],
+    ['partage', '05', 'Le partage']
+  ];
+  let active = '';
+  const set = (n, name) => {
+    if (active === n) return;
+    active = n;
+    num.textContent = n;
+    lbl.innerHTML = `<em>${name}</em>`;
+  };
+  const sio = new IntersectionObserver(es => es.forEach(en => {
+    if (!en.isIntersecting) return;
+    const row = MAP.find(m => m[0] === en.target.id);
+    if (row) set(row[1], row[2]);
+    el.classList.toggle('is-live', row && row[0] !== 'hero');
+  }), { threshold: .3 });
+  MAP.forEach(([id]) => { const n = $('#' + id); if (n) sio.observe(n); });
+
+  /* on efface l'indicateur au-dessus du pied de page */
+  const foot = $('#contact');
+  if (foot) new IntersectionObserver(e =>
+    document.body.classList.toggle('at-footer', e[0].isIntersecting),
+    { threshold: .05 }).observe(foot);
+})();
+
+/* --- volet orange sur la navigation du menu ----------------------------- */
+(function wipe() {
+  const el = $('#wipe');
+  if (!el) return;
+  $$('#menu a[href^="#"]').forEach(a => a.addEventListener('click', e => {
+    const t = document.querySelector(a.getAttribute('href'));
+    if (!t || REDUCED) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    el.classList.remove('is-in');
+    void el.offsetWidth;
+    el.classList.add('is-in');
+    setTimeout(() => {
+      document.body.classList.remove('menu-open', 'is-locked');
+      $('#burger')?.setAttribute('aria-expanded', 'false');
+      const top = a.getAttribute('href') === '#top' ? 0
+        : t.getBoundingClientRect().top + SCROLL.y - (innerWidth > 860 ? 70 : 60);
+      scrollTo({ top, behavior: 'auto' });
+    }, 470);
+    setTimeout(() => el.classList.remove('is-in'), 1100);
+  }, true));
+})();
+
+/* --- inclinaison 3D du paquet ------------------------------------------ */
+(function tilt() {
+  const stage = $('#shopStage'), slides = $('#shopSlides');
+  if (!stage || !slides || REDUCED || matchMedia('(pointer:coarse)').matches) return;
+  stage.addEventListener('pointermove', e => {
+    const r = stage.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width - .5;
+    const y = (e.clientY - r.top) / r.height - .5;
+    slides.style.transform = `rotateY(${(x * 11).toFixed(2)}deg) rotateX(${(-y * 9).toFixed(2)}deg)`;
+  });
+  stage.addEventListener('pointerleave', () => { slides.style.transform = ''; });
+})();
+
+/* --- lettres du pied de page ------------------------------------------- */
+(function letters() {
+  $$('[data-letters]').forEach(el => {
+    const txt = el.textContent;
+    el.textContent = '';
+    [...txt].forEach((ch, i) => {
+      const sp = document.createElement('span');
+      sp.className = 'ltr';
+      sp.textContent = ch === ' ' ? '\u00a0' : ch;
+      sp.style.setProperty('--d', i * 38);
+      el.appendChild(sp);
+    });
+  });
+})();
