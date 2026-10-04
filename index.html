@@ -1,65 +1,367 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Commande Baeaubab Sénégal</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f9f9f9; }
-        .container { max-width: 600px; margin: auto; background: #fff; padding: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        h1 { text-align: center; color: #007bff; }
-        .product { display: flex; align-items: center; margin-bottom: 15px; }
-        .product img { width: 70px; margin-right: 15px; border-radius: 5px; }
-        label { display: block; margin-top: 10px; font-weight: bold; }
-        input, select, textarea { width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px; }
-        button { background: #28a745; color: white; border: none; padding: 10px 20px; margin-top: 15px; border-radius: 4px; cursor: pointer; }
-        button:hover { background: #218838; }
-        @media (max-width: 600px) {
-            .product { flex-direction: column; align-items: flex-start; }
-            .product img { margin-bottom: 10px; }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Darou Minam Cafe — Le goût. Le geste. Le partage.</title>
+<meta name="description" content="Darou Minam Cafe — le caractère du café Touba. Café torréfié et diar, une intensité qui se découvre, un rituel qui se partage. Commandez en 250 g et 500 g.">
+<meta name="theme-color" content="#0A0908">
+<meta property="og:title" content="Darou Minam Cafe — Le goût. Le geste. Le partage.">
+<meta property="og:description" content="Le caractère du café Touba. Café torréfié et diar.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="assets/img/hero-pour.webp">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230A0908'/%3E%3Crect x='7' y='7' width='18' height='18' fill='%23E2531C'/%3E%3C/svg%3E">
+<link rel="preload" as="font" type="font/woff2" href="assets/fonts/anton-400-latin.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="assets/fonts/space-grotesk-400-latin.woff2" crossorigin>
+<link rel="stylesheet" href="assets/fonts/fonts.css">
+<link rel="preload" as="image" href="assets/img/hero-pour.webp">
+<link rel="stylesheet" href="assets/css/main.css">
 </head>
 <body>
-    <div class="container">
-        <h1>Commande Baeaubab</h1>
-        <form id="orderForm">
-            <div class="product"><img src="images/pack330.jpg"><label>Packs 330ml (1300 FCFA)</label><input type="number" name="pack_330" min="0"></div>
-            <div class="product"><img src="images/pack570.jpg"><label>Packs 570ml (2260 FCFA)</label><input type="number" name="pack_570" min="0"></div>
-            <div class="product"><img src="images/pack1500.jpg"><label>Bouteilles 1,5L (1800 FCFA)</label><input type="number" name="bottle_1_5l" min="0"></div>
-            <div class="product"><img src="images/refroidisseur.jpg"><label>Refroidisseur (96000 FCFA)</label><input type="number" name="refroidisseur" min="0"></div>
-            <div class="product"><img src="images/bouteille19.jpg"><label>Bouteille 19L (2500 FCFA)</label><input type="number" name="bouteille_19l" min="0"></div>
-            <div class="product"><img src="images/consigne.jpg"><label>Consigne bouteille 19L (4500 FCFA)</label><input type="number" name="consigne" min="0"></div>
-            <div class="product"><img src="images/location.jpg"><label>Refroidisseur (location - 2500 FCFA/jour)</label><input type="number" name="refroidisseur_location" min="0"></div>
-            
-            <label>Nom complet</label><input type="text" name="nom" required>
-            <label>Numéro de téléphone</label><input type="tel" name="telephone" required>
-            <label>Adresse de livraison</label><textarea name="adresse" required></textarea>
-            <label>Date de livraison</label><input type="date" name="date_livraison" required>
-            <label>Heure souhaitée</label><input type="time" name="heure_livraison" required>
-            <label>Remarques</label><textarea name="remarques"></textarea>
-            
-            <button type="submit">Valider la commande</button>
-        </form>
-    </div>
-    <script>
-        document.getElementById("orderForm").addEventListener("submit", function(e) {
-            e.preventDefault();
-            const form = e.target;
-            const data = new FormData(form);
-            const entries = Object.fromEntries(data.entries());
 
-            fetch("https://script.google.com/macros/s/AKfycbw4G-tdzm46jpKPWWISkiO33YC75gMzZtbPulQSPErxKxtJxmtkuoswMvpn4GeDr5Oo/exec", {
-                method: "POST",
-                body: new URLSearchParams(entries)
-            }).then(() => {
-                const nom = encodeURIComponent(entries.nom);
-                const tel = encodeURIComponent(entries.telephone);
-                const message = `Bonjour, je viens de passer une commande : ${nom} - ${tel}`;
-                window.location.href = "https://wa.me/221786156206?text=" + message;
-            }).catch(() => alert("Erreur lors de l'envoi. Veuillez réessayer."));
-        });
-    </script>
+<!-- ============ PRELOADER ============ -->
+<div class="loader" id="loader">
+  <div class="loader__inner">
+    <strong class="loader__mark"><span>Darou Minam</span></strong>
+    <div class="loader__sub">C&nbsp;A&nbsp;F&nbsp;E</div>
+    <div class="loader__bar"><i id="loaderBar"></i></div>
+  </div>
+  <div class="loader__num" id="loaderNum">0</div>
+</div>
+
+<div class="cursor" id="cursor"><span></span></div>
+<div class="scroll-progress" id="scrollProgress"></div>
+
+<!-- ============ HEADER ============ -->
+<header class="header" id="header">
+  <a href="#top" class="brand" data-magnetic>
+    <b>Darou Minam</b><i>Cafe</i>
+  </a>
+  <nav class="nav" id="nav">
+    <a href="#boutique">Nos cafés</a>
+    <a href="#origine">L'origine</a>
+    <a href="#rituel">Le rituel</a>
+  </nav>
+  <div class="header__right">
+    <button class="cart-btn" id="cartBtn" aria-label="Ouvrir le panier">
+      <svg viewBox="0 0 24 24"><path d="M6 8h12l1 12H5L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>
+      <b>(<span id="cartCount">0</span>)</b>
+    </button>
+    <span aria-hidden="true" style="color:var(--orange)">•</span>
+    <button class="burger" id="burger" aria-label="Ouvrir le menu" aria-expanded="false"><i></i><i></i><i></i></button>
+  </div>
+</header>
+
+<!-- ============ MENU ============ -->
+<div class="menu" id="menu" role="dialog" aria-modal="true" aria-label="Menu principal">
+  <ul class="menu__list">
+    <li><a href="#top"><em>01</em>Accueil</a></li>
+    <li><a href="#origine"><em>02</em>L'origine</a></li>
+    <li><a href="#boutique"><em>03</em>Nos cafés</a></li>
+    <li><a href="#rituel"><em>04</em>Le rituel</a></li>
+    <li><a href="#partage"><em>05</em>Le partage</a></li>
+  </ul>
+  <div class="menu__aside">
+    <div class="menu__media"><img src="assets/img/partage-portrait.webp" alt="Des mains partagent un café Touba autour d'une table" loading="lazy"></div>
+    <div class="menu__meta">
+      <a href="https://wa.me/221786156206" target="_blank" rel="noopener">WhatsApp — +221 78 615 62 06</a>
+      <a href="#boutique">Commander</a>
+    </div>
+  </div>
+</div>
+
+<main id="top">
+
+<!-- ============ 01 — HERO ============ -->
+<section class="hero" id="hero" data-section="01">
+  <div class="hero__media" id="heroMedia">
+    <div class="hero__frame is-on"><img src="assets/img/hero-pour.webp" alt="Café Touba versé dans un verre, à côté du paquet Darou Minam" fetchpriority="high"></div>
+    <div class="hero__frame"><img src="assets/img/rituel-filtre.webp" alt="Le café filtré à travers la chaussette" loading="lazy"></div>
+    <div class="hero__frame"><img src="assets/img/partage-bande.webp" alt="Le partage du café autour d'une table" loading="lazy"></div>
+  </div>
+
+  <div class="hero__inner">
+    <p class="eyebrow" data-reveal="fade"><i></i> Café Touba · Darou Minam Cafe</p>
+    <h1 class="display display--xl" data-split>
+      <span class="line">Le goût<span class="dot">.</span></span>
+      <span class="line">Le geste<span class="dot">.</span></span>
+      <span class="line">Le partage<span class="dot">.</span></span>
+    </h1>
+    <p class="lead" data-reveal style="--d:450">Une intensité qui se découvre. Un rituel qui se partage.</p>
+    <div class="hero__cta" data-reveal style="--d:600">
+      <a href="#boutique" class="btn btn--solid" data-magnetic><span>Explorer nos cafés <svg class="arrow" width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 11 11 2M4 2h7v7"/></svg></span></a>
+      <div class="play-row">
+        <button class="play" data-film aria-label="Voir le film"><svg viewBox="0 0 14 16"><path d="M0 0v16l14-8z"/></svg></button>
+        <span>Voir le film</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="hero__bar">
+    <div class="player">
+      <button class="player__toggle" id="heroToggle" aria-label="Lecture / pause de la séquence">
+        <svg class="ic-pause" viewBox="0 0 14 14"><rect width="4" height="14"/><rect x="9" width="4" height="14"/></svg>
+        <svg class="ic-play" viewBox="0 0 14 14"><path d="M0 0v14l13-7z"/></svg>
+      </button>
+      <span id="heroLabel">01 — Le rituel</span>
+      <span class="track"><i id="heroTrack"></i></span>
+      <span class="time"><span id="heroTime">00:00</span> / 00:32</span>
+    </div>
+    <a href="#origine" class="hero__scroll">Faites défiler <svg viewBox="0 0 12 22"><path d="M6 0v20M1 15l5 5 5-5"/></svg></a>
+    <button class="sound" id="soundBtn" aria-pressed="false">
+      <svg viewBox="0 0 20 20"><path d="M4 7h3l4-3v12l-4-3H4z"/><path d="M14 7a4 4 0 0 1 0 6"/></svg>
+      <span id="soundLabel">Activer le son</span>
+    </button>
+  </div>
+
+  <div class="rail" id="rail" aria-hidden="true">
+    <button data-goto="hero" class="is-on">01</button><span class="bar is-on"><i></i></span>
+    <button data-goto="boutique">02</button><span class="bar"><i></i></span>
+    <button data-goto="rituel">03</button>
+  </div>
+</section>
+
+<!-- ============ MARQUEE ============ -->
+<div class="marquee" id="marquee" aria-hidden="true">
+  <div class="marquee__row">
+    <span>Café Touba</span><span>Café &amp; diar</span><span>Torréfié à Dakar</span><span>Darou Minam</span>
+    <span>Café Touba</span><span>Café &amp; diar</span><span>Torréfié à Dakar</span><span>Darou Minam</span>
+  </div>
+</div>
+
+<!-- ============ 02 — ORIGINE / INGRÉDIENTS ============ -->
+<section class="section" id="origine" data-section="02">
+  <div class="wrap sec-head">
+    <div>
+      <p class="eyebrow" data-reveal="fade"><b>(02)</b> Les ingrédients</p>
+      <h2 class="display" data-reveal-group>
+        <span class="mask"><span>Au cœur<span class="dot">.</span></span></span>
+        <span class="mask"><span style="--d:120">de l'intensité<span class="dot">.</span></span></span>
+      </h2>
+    </div>
+    <div class="sec-head__aside">
+      <p class="lead" data-reveal style="--d:200">Deux caractères, une seule tasse. Le café torréfié rencontre la chaleur du diar — ce poivre de Guinée qui donne au café Touba sa signature.</p>
+      <p class="kicker" data-reveal style="--d:320;margin-top:1.4rem">Le café × Le diar</p>
+    </div>
+  </div>
+</section>
+
+<div class="split" id="split">
+  <div class="split__over wrap">
+    <h2 class="display" data-reveal-group>
+      <span class="mask"><span>Deux caractères<span class="dot">.</span></span></span>
+      <span class="mask"><span style="--d:120">Une intensité<span class="dot">.</span></span></span>
+    </h2>
+    <p class="lead" data-reveal style="--d:280">Le café torréfié rencontre la chaleur du diar.</p>
+  </div>
+
+  <article class="panel" data-panel>
+    <div class="panel__bg" data-parallax="0.08"><img src="assets/img/grain-cafe.webp" alt="Grains de café torréfiés" loading="lazy"></div>
+    <div class="panel__body">
+      <div class="panel__top">
+        <b>01</b><em>Le café</em><hr>
+        <button class="plus" aria-label="En savoir plus sur le café" data-panel-toggle></button>
+      </div>
+      <h3>La profondeur des arômes.</h3>
+      <div class="panel__more">
+        <p>Un grain robusta torréfié lentement, jusqu'à la note cacaotée. La torréfaction foncée donne ce corps dense et cette amertume ronde que le sucre vient équilibrer.</p>
+        <div class="panel__tags"><i>Torréfaction foncée</i><i>Corps dense</i><i>Note cacao</i></div>
+      </div>
+    </div>
+  </article>
+
+  <article class="panel" data-panel>
+    <div class="panel__bg" data-parallax="0.12"><img src="assets/img/diar.webp" alt="Gousses de diar, le poivre de Guinée" loading="lazy"></div>
+    <div class="panel__body">
+      <div class="panel__top">
+        <b>02</b><em>Le diar</em><hr>
+        <button class="plus" aria-label="En savoir plus sur le diar" data-panel-toggle></button>
+      </div>
+      <h3>La signature épicée du café Touba.</h3>
+      <div class="panel__more">
+        <p>Le diar — poivre de Guinée — est broyé avec le café juste avant l'infusion. Il apporte le piquant chaud, légèrement poivré et boisé, qui fait reconnaître un café Touba dès la première gorgée.</p>
+        <div class="panel__tags"><i>Poivre de Guinée</i><i>Chaleur</i><i>Boisé</i></div>
+      </div>
+    </div>
+  </article>
+
+  <div class="split__foot">Explorez les arômes <svg viewBox="0 0 12 20"><path d="M6 0v18M1 13l5 5 5-5"/></svg></div>
+</div>
+
+<!-- ============ STATS ============ -->
+<section class="section">
+  <div class="wrap stats">
+    <div class="stat" data-reveal><b data-count="100">0</b><span>Café &amp; diar, rien d'autre</span></div>
+    <div class="stat" data-reveal style="--d:120"><b data-count="2">0</b><span>Formats : 250 g &amp; 500 g</span></div>
+    <div class="stat" data-reveal style="--d:240"><b data-count="48"><i></i></b><span>Livraison Dakar sous 48 h</span></div>
+    <div class="stat" data-reveal style="--d:360"><b data-count="1">0</b><span>Rituel, partagé chaque jour</span></div>
+  </div>
+</section>
+
+<!-- ============ 03 — BOUTIQUE ============ -->
+<section class="section shop" id="boutique" data-section="03">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <p class="eyebrow" data-reveal="fade"><b>(03)</b> Nos cafés</p>
+        <h2 class="display" data-reveal-group>
+          <span class="mask"><span>Votre café<span class="dot">.</span></span></span>
+          <span class="mask"><span style="--d:120">Votre rituel<span class="dot">.</span></span></span>
+        </h2>
+        <p class="lead" data-reveal style="--d:240">Choisissez votre format de café Touba.</p>
+      </div>
+      <div class="sec-head__aside">
+        <p class="kicker" data-reveal style="--d:280;margin-bottom:.9rem">Choix rapide</p>
+        <div class="opts" id="quickFormats" data-reveal style="--d:340"></div>
+      </div>
+    </div>
+
+    <div class="shop__grid">
+      <div>
+        <div class="shop__stage" id="shopStage">
+          <div class="slide__ghost" id="shopGhost" aria-hidden="true">250 g</div>
+          <div class="shop__slides" id="shopSlides"></div>
+        </div>
+        <div class="shop__nav">
+          <button class="circle-btn" id="prevBtn" aria-label="Produit précédent"><svg viewBox="0 0 14 14"><path d="M9 1 3 7l6 6"/></svg></button>
+          <button class="circle-btn" id="nextBtn" aria-label="Produit suivant"><svg viewBox="0 0 14 14"><path d="M5 1l6 6-6 6"/></svg></button>
+          <span class="shop__count"><b id="shopIndex">01</b> / <span id="shopTotal">02</span></span>
+          <span class="shop__drag"><i></i> Faire glisser</span>
+        </div>
+      </div>
+
+      <div class="buy" id="buy" data-reveal="right">
+        <p class="buy__eyebrow" id="buyEyebrow">Café Touba</p>
+        <h3 id="buyName">Le format découverte</h3>
+        <p class="buy__price"><span id="buyPrice">—</span><small id="buyWeight">250 g</small></p>
+        <p class="buy__desc" id="buyDesc">Café torréfié et diar.</p>
+
+        <div class="buy__row">
+          <label>Format</label>
+          <div class="opts" id="formats"></div>
+        </div>
+
+        <div class="buy__row">
+          <label>Quantité</label>
+          <div class="qty">
+            <button type="button" data-qty="-1" aria-label="Diminuer">−</button>
+            <input type="number" id="qty" value="1" min="1" max="99" aria-label="Quantité">
+            <button type="button" data-qty="1" aria-label="Augmenter">+</button>
+          </div>
+        </div>
+
+        <div class="buy__actions">
+          <button class="btn btn--solid btn--block" id="addBtn" data-magnetic><span>Ajouter au panier <svg class="arrow" width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 11 11 2M4 2h7v7"/></svg></span></button>
+          <button class="btn btn--ghost btn--block" id="buyNow"><span>Commander maintenant</span></button>
+        </div>
+
+        <div class="buy__meta">
+          <span>Livraison Dakar</span><span>Paiement à la livraison</span><span>Confirmation WhatsApp</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 04 — RITUEL ============ -->
+<section class="ritual" id="rituel" data-section="04">
+  <div class="ritual__media" id="ritualMedia">
+    <figure class="is-on"><img src="assets/img/grain-macro.webp" alt="Café moulu prêt pour l'infusion" loading="lazy"></figure>
+    <figure><img src="assets/img/rituel-filtre.webp" alt="L'eau chaude versée sur le café dans le filtre" loading="lazy"></figure>
+    <figure><img src="assets/img/partage-bande.webp" alt="Les verres de café posés sur la table" loading="lazy"></figure>
+  </div>
+  <div class="ritual__inner wrap">
+    <p class="eyebrow" data-reveal="fade"><i></i><b>(04)</b> La préparation</p>
+    <h2 class="display" data-reveal-group>
+      <span class="mask"><span>Le geste fait</span></span>
+      <span class="mask"><span style="--d:120">la différence<span class="dot">.</span></span></span>
+    </h2>
+    <p class="lead" data-reveal style="--d:240">Découvrez le rituel du café Touba.</p>
+    <div class="play-row" data-reveal style="--d:360;margin-top:clamp(24px,3vh,40px)">
+      <button class="play" data-film aria-label="Lancer le film"><svg viewBox="0 0 14 16"><path d="M0 0v16l14-8z"/></svg></button>
+      <span>Lancer le film</span>
+    </div>
+  </div>
+  <div class="steps" id="steps">
+    <button class="step is-on" data-step="0"><span class="step__line"><i></i></span><b>01 — Préparer</b><span>Moudre le café avec le diar, doser généreusement.</span></button>
+    <button class="step" data-step="1"><span class="step__line"><i></i></span><b>02 — Filtrer</b><span>Prendre le temps de révéler les arômes.</span></button>
+    <button class="step" data-step="2"><span class="step__line"><i></i></span><b>03 — Partager</b><span>Servir brûlant, sucré, et faire circuler les verres.</span></button>
+  </div>
+</section>
+
+<!-- ============ 05 — PARTAGE ============ -->
+<section class="share" id="partage" data-section="05">
+  <div class="share__bg" data-parallax="0.16"><img src="assets/img/partage-portrait.webp" alt="Trois personnes partagent un café Touba" loading="lazy"></div>
+  <div class="share__inner wrap">
+    <p class="eyebrow" data-reveal="fade"><b>(05)</b> Le partage</p>
+    <h2 class="display" data-reveal-group>
+      <span class="mask"><span>Un café<span class="dot">.</span></span></span>
+      <span class="mask"><span style="--d:120">Des liens<span class="dot">.</span></span></span>
+    </h2>
+    <p class="lead" data-reveal style="--d:240">Autour d'une tasse, le plaisir d'être ensemble.</p>
+    <a href="#boutique" class="btn btn--solid" data-reveal data-magnetic style="--d:380;margin-top:clamp(22px,3vh,38px)"><span>Retrouver nos cafés <svg class="arrow" width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 11 11 2M4 2h7v7"/></svg></span></a>
+  </div>
+  <button class="play share__play" data-film aria-label="Voir le film"><svg viewBox="0 0 14 16"><path d="M0 0v16l14-8z"/></svg></button>
+</section>
+
+</main>
+
+<!-- ============ FOOTER ============ -->
+<footer class="footer" id="contact">
+  <div class="wrap footer__grid">
+    <div class="footer__brand" data-reveal>
+      <b>Darou Minam</b><i>Cafe</i>
+      <p>Le caractère du café Touba.</p>
+    </div>
+    <div class="fcol" data-reveal style="--d:120">
+      <h4>Découvrir</h4>
+      <ul><li><a href="#boutique">Nos cafés</a></li><li><a href="#rituel">Le rituel</a></li><li><a href="#origine">Notre univers</a></li></ul>
+    </div>
+    <div class="fcol" data-reveal style="--d:220">
+      <h4>À votre écoute</h4>
+      <ul><li><a href="https://wa.me/221786156206" target="_blank" rel="noopener">Nous contacter</a></li><li><a href="https://wa.me/221786156206?text=Bonjour%2C%20je%20suis%20un%20professionnel%20et%20je%20souhaite%20commander%20du%20caf%C3%A9%20Touba." target="_blank" rel="noopener">Professionnels</a></li></ul>
+    </div>
+    <div class="fcol" data-reveal style="--d:320">
+      <h4>Informations</h4>
+      <ul><li><a href="#boutique">Livraison et retours</a></li><li><a href="#boutique">Conditions de vente</a></li><li><a href="#boutique">Confidentialité</a></li></ul>
+    </div>
+  </div>
+  <div class="wrap footer__bottom">
+    <span>© <span id="year">2026</span> Darou Minam Cafe</span>
+    <a href="#top" class="to-top">Retour en haut <svg viewBox="0 0 12 18"><path d="M6 18V1M1 6l5-5 5 5"/></svg></a>
+  </div>
+</footer>
+
+<!-- ============ CART ============ -->
+<div class="scrim" id="scrim"></div>
+
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-label="Panier">
+  <div class="drawer__head">
+    <h3>Panier <small id="drawerCount">(0)</small></h3>
+    <button class="x" id="closeCart" aria-label="Fermer le panier"><svg viewBox="0 0 13 13" fill="none"><path d="M1 1l11 11M12 1L1 12"/></svg></button>
+  </div>
+  <div class="drawer__body" id="drawerBody"></div>
+  <div class="drawer__foot" id="drawerFoot"></div>
+</aside>
+
+<!-- ============ FILM ============ -->
+<div class="film" id="film" role="dialog" aria-modal="true" aria-label="Film">
+  <div class="film__stage">
+    <div class="film__track"><i id="filmTrack"></i></div>
+    <figure class="is-on"><img src="assets/img/hero-pour.webp" alt=""></figure>
+    <figure><img src="assets/img/grain-macro.webp" alt=""></figure>
+    <figure><img src="assets/img/rituel-filtre.webp" alt=""></figure>
+    <figure><img src="assets/img/partage-bande.webp" alt=""></figure>
+    <div class="film__cap">
+      <h3 id="filmTitle">Le goût.</h3>
+      <p id="filmText">Café torréfié et diar, l'intensité du café Touba.</p>
+    </div>
+  </div>
+  <button class="x film__close" id="closeFilm" aria-label="Fermer le film"><svg viewBox="0 0 13 13" fill="none"><path d="M1 1l11 11M12 1L1 12"/></svg></button>
+</div>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<script src="assets/js/main.js" defer></script>
 </body>
 </html>
