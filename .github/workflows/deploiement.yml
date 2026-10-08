@@ -4,7 +4,7 @@ name: Déploiement sur le VPS
 # l'onglet Actions de GitHub.
 on:
   push:
-    branches: [claude/site-boutique-motion-design-qdtr3t]
+    branches: [main, claude/site-boutique-motion-design-qdtr3t]
     paths-ignore: ['README.md', 'apps-script/**']
   workflow_dispatch:
     inputs:
@@ -87,7 +87,7 @@ jobs:
           export RESEND_API_KEY='$RESEND_API_KEY'
           export OWNER_EMAIL='$OWNER_EMAIL'
           export DOMAINE='$DOMAINE'
-          export BRANCHE='claude/site-boutique-motion-design-qdtr3t'
+          export BRANCHE='${{ github.ref_name }}'
 
           MODE='$MODE'
           if [ "\$MODE" = "auto" ]; then

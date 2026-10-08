@@ -96,7 +96,7 @@ site et l'API répondent.
 Sur un Ubuntu 22.04 ou 24.04 neuf, en root :
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ndiol1418/commande/refs/heads/claude/site-boutique-motion-design-qdtr3t/deploy/install.sh -o /tmp/install.sh
+curl -fsSL https://raw.githubusercontent.com/ndiol1418/commande/refs/heads/main/deploy/install.sh -o /tmp/install.sh
 bash /tmp/install.sh
 ```
 

@@ -12,7 +12,7 @@ set -euo pipefail
 
 DOMAINE="${DOMAINE:-daaruminamcafe.com}"
 DEPOT="${DEPOT:-https://github.com/ndiol1418/commande.git}"
-BRANCHE="${BRANCHE:-claude/site-boutique-motion-design-qdtr3t}"
+BRANCHE="${BRANCHE:-main}"
 APP=/opt/daaruminam
 WEB=/var/www/daaruminam
 UTILISATEUR=daaru

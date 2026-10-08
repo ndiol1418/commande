@@ -3,7 +3,7 @@
 set -euo pipefail
 APP=/opt/daaruminam
 WEB=/var/www/daaruminam
-BRANCHE="${BRANCHE:-claude/site-boutique-motion-design-qdtr3t}"
+BRANCHE="${BRANCHE:-main}"
 
 [ "$(id -u)" -eq 0 ] || { echo "Lancez ce script en root."; exit 1; }
 
