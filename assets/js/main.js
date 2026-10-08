@@ -482,50 +482,217 @@ let current = 0;
 })();
 
 /* =========================================================================
-   13. PANIER
+   13. PANIER ET COMMANDE
    ========================================================================= */
-const CART_KEY = 'dm-cart-v1';
-let cart = [];
-try { cart = JSON.parse(localStorage.getItem(CART_KEY)) || []; } catch (e) { cart = []; }
+const CART_KEY = 'dm-cart-v1', CLIENT_KEY = 'dm-client-v1', LAST_KEY = 'dm-last-v1';
 
-const saveCart = () => { try { localStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch (e) {} };
+let cart = [], client = {}, lastOrder = null;
+const read = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) || d; } catch (e) { return d; } };
+const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+cart = read(CART_KEY, []);
+client = read(CLIENT_KEY, {});
+lastOrder = read(LAST_KEY, null);
+
+const saveCart = () => save(CART_KEY, cart);
 const cartCount = () => cart.reduce((n, i) => n + i.qty, 0);
-const cartTotal = () => cart.reduce((n, i) => n + i.qty * i.price, 0);
+const subtotal = () => cart.reduce((n, i) => n + i.qty * i.price, 0);
+const shippingFor = mode => (mode === 'retrait' ? 0 : CONFIG.shipping);
+const totalFor = mode => subtotal() + (shippingFor(mode) || 0);
+const shipLabel = mode => mode === 'retrait' ? 'Retrait sur place — offert'
+  : (CONFIG.shipping === null ? 'à confirmer' : money(CONFIG.shipping));
+
+/* --- téléphone ---------------------------------------------------------- */
+function normPhone(v) {
+  const d = String(v || '').replace(/\D/g, '');
+  if (/^7\d{8}$/.test(d)) return '221' + d;          // 77 123 45 67
+  if (/^221\d{9}$/.test(d)) return d;                // 221 77 123 45 67
+  if (/^00221\d{9}$/.test(d)) return d.slice(2);
+  if (d.length >= 8 && d.length <= 15) return d;     // numéro étranger
+  return null;
+}
+const prettyPhone = n => /^221\d{9}$/.test(n)
+  ? n.replace(/^221(\d{2})(\d{3})(\d{2})(\d{2})$/, '+221 $1 $2 $3 $4')
+  : '+' + n;
+
+/* --- référence de commande --------------------------------------------- */
+const newRef = () => 'DM-' + (Date.now().toString(36) + Math.random().toString(36).slice(2, 5))
+  .slice(-6).toUpperCase();
+
+/* --- message WhatsApp --------------------------------------------------- */
+function orderText(o) {
+  const lignes = o.items.map(i => `• ${i.brand} ${i.weight} × ${i.qty} — ${money(i.qty * i.price)}`);
+  return [
+    `Bonjour Darou Minam Cafe, je passe commande (réf. ${o.ref}) :`,
+    '',
+    ...lignes,
+    '',
+    `Total produits : ${money(o.subtotal)}`,
+    `Livraison : ${o.shipLabel}`,
+    o.shipping === null && o.mode !== 'retrait' ? '' : `Total : ${money(o.total)}`,
+    '',
+    `Nom : ${o.nom}`,
+    `Téléphone : ${prettyPhone(o.tel)}`,
+    o.mode === 'retrait' ? 'Mode : retrait sur place' : `Adresse de livraison : ${o.adresse}`,
+    `Souhaitée le : ${o.dateLisible} à ${o.heure}`,
+    o.remarques ? `Remarques : ${o.remarques}` : ''
+  ].filter(Boolean).join('\n');
+}
+const waLink = o => `https://wa.me/${CONFIG.whatsapp}?text=${encodeURIComponent(orderText(o))}`;
+
+/* --- enregistrement dans le tableur (sans bloquer la navigation) -------- */
+function logOrder(o) {
+  if (!CONFIG.sheet) return;
+  const body = new URLSearchParams({
+    reference: o.ref,
+    nom: o.nom,
+    telephone: prettyPhone(o.tel),
+    mode: o.mode,
+    adresse: o.mode === 'retrait' ? 'Retrait sur place' : o.adresse,
+    date_livraison: o.date,
+    heure_livraison: o.heure,
+    remarques: o.remarques || '',
+    commande: o.items.map(i => `${i.brand} ${i.weight} x${i.qty}`).join(' | '),
+    details: o.items.map(i => `${i.id}:${i.qty}`).join(','),
+    sous_total: o.subtotal,
+    livraison: o.shipping === null ? '' : o.shipping,
+    total: o.total,
+    devise: CONFIG.currency,
+    source: location.hostname || 'site'
+  });
+  try {
+    if (navigator.sendBeacon && navigator.sendBeacon(CONFIG.sheet, body)) return;
+  } catch (e) {}
+  try { fetch(CONFIG.sheet, { method: 'POST', mode: 'no-cors', keepalive: true, body }); } catch (e) {}
+}
+
+/* --- vues du tiroir ----------------------------------------------------- */
+const totalsBlock = mode => `
+  <div class="totals">
+    <div><span>Sous-total</span><span>${money(subtotal())}</span></div>
+    <div><span>Livraison</span><span>${shipLabel(mode)}</span></div>
+    <div class="grand"><span>${CONFIG.shipping === null && mode !== 'retrait' ? 'Total produits' : 'Total'}</span><b>${money(totalFor(mode))}</b></div>
+    ${CONFIG.shipping === null && mode !== 'retrait'
+      ? '<p class="totals__note">Les frais de livraison vous seront confirmés sur WhatsApp.</p>' : ''}
+  </div>`;
+
+const stepBar = n => `
+  <ol class="steps-bar">
+    ${['Panier', 'Vos infos', 'Validation'].map((t, k) => `
+      <li class="${k + 1 === n ? 'is-on' : ''}${k + 1 < n ? ' is-done' : ''}"><b>${k + 1}</b>${t}</li>`).join('')}
+  </ol>`;
 
 function renderCart(view) {
   const body = $('#drawerBody'), foot = $('#drawerFoot');
   $('#cartCount').textContent = cartCount();
   $('#drawerCount').textContent = '(' + cartCount() + ')';
 
-  if (view === 'done') return;
-
-  if (view === 'checkout') {
+  /* ---- 4. commande envoyée -------------------------------------------- */
+  if (view === 'done' && lastOrder) {
+    const url = waLink(lastOrder);
     body.innerHTML = `
-      <button class="back-link" id="backToCart">← Retour au panier</button>
-      <form id="orderForm" novalidate>
-        <div class="field"><label for="f-nom">Nom complet</label><input id="f-nom" name="nom" required autocomplete="name"></div>
-        <div class="field"><label for="f-tel">Téléphone (WhatsApp)</label><input id="f-tel" name="telephone" type="tel" required autocomplete="tel" placeholder="77 000 00 00"></div>
-        <div class="field"><label for="f-adr">Adresse de livraison</label><textarea id="f-adr" name="adresse" required autocomplete="street-address"></textarea></div>
-        <div class="field field-2">
-          <div><label for="f-date">Date</label><input id="f-date" name="date_livraison" type="date" required></div>
-          <div><label for="f-heure">Heure</label><input id="f-heure" name="heure_livraison" type="time" required></div>
-        </div>
-        <div class="field"><label for="f-rem">Remarques</label><textarea id="f-rem" name="remarques" placeholder="Étage, point de repère, préférences…"></textarea></div>
-        <p class="form-note">En validant, votre commande est enregistrée puis ouverte dans WhatsApp pour confirmation avec notre équipe.</p>
-      </form>`;
-    foot.innerHTML = `
-      <div class="totals">
-        <div><span>Sous-total</span><span>${money(cartTotal())}</span></div>
-        <div><span>Livraison</span><span>${CONFIG.shipping === null ? 'à confirmer' : money(CONFIG.shipping)}</span></div>
-        <div class="grand"><span>Total</span><b>${money(cartTotal() + (CONFIG.shipping || 0))}</b></div>
-      </div>
-      <button class="btn btn--solid btn--block" id="submitOrder"><span>Valider la commande <svg class="arrow" width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 11 11 2M4 2h7v7"/></svg></span></button>`;
-    const d = $('#f-date'); if (d) d.min = new Date().toISOString().slice(0, 10);
-    $('#backToCart').addEventListener('click', () => renderCart());
-    $('#submitOrder').addEventListener('click', submitOrder);
+      <div class="done">
+        <div class="done__mark"><svg viewBox="0 0 30 30" fill="none"><path d="M6 15.5l6 6L24 9"/></svg></div>
+        <h3>WhatsApp est ouvert.</h3>
+        <p class="done__ref">Référence <b>${lastOrder.ref}</b></p>
+        <p>Il ne reste qu'à <b>appuyer sur envoyer</b> dans WhatsApp : c'est ce message qui vaut commande.</p>
+        <a class="btn btn--ghost btn--block" href="${url}" target="_blank" rel="noopener"><span>Rouvrir WhatsApp</span></a>
+        <button class="btn btn--ghost btn--block" id="copyOrder"><span>Copier ma commande</span></button>
+      </div>`;
+    foot.innerHTML = `<button class="btn btn--solid btn--block" id="orderSent"><span>J'ai envoyé ma commande ✓</span></button>
+      <p class="form-note" style="margin:.8rem 0 0">Votre panier est gardé tant que vous n'avez pas confirmé.</p>`;
+    $('#copyOrder').addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(orderText(lastOrder)); toast('Commande copiée ✓'); }
+      catch (e) { toast('Copie impossible sur ce navigateur'); }
+    });
+    $('#orderSent').addEventListener('click', () => {
+      cart = []; saveCart();
+      toast('Merci ! Nous vous répondons sur WhatsApp.');
+      closeCart(); setTimeout(() => renderCart(), 600);
+    });
     return;
   }
 
+  /* ---- 3. récapitulatif ------------------------------------------------ */
+  if (view === 'recap' && lastOrder) {
+    const o = lastOrder;
+    body.innerHTML = stepBar(3) + `
+      <button class="back-link" id="backInfos">← Modifier mes informations</button>
+      <div class="recap">
+        <h4>Votre commande</h4>
+        <ul>${o.items.map(i => `<li><span>${i.brand} ${i.weight} × ${i.qty}</span><b>${money(i.qty * i.price)}</b></li>`).join('')}</ul>
+        <h4>Livraison</h4>
+        <dl>
+          <dt>Nom</dt><dd>${o.nom}</dd>
+          <dt>Téléphone</dt><dd>${prettyPhone(o.tel)}</dd>
+          <dt>${o.mode === 'retrait' ? 'Mode' : 'Adresse'}</dt><dd>${o.mode === 'retrait' ? 'Retrait sur place' : o.adresse}</dd>
+          <dt>Quand</dt><dd>${o.dateLisible} à ${o.heure}</dd>
+          ${o.remarques ? `<dt>Remarques</dt><dd>${o.remarques}</dd>` : ''}
+        </dl>
+      </div>
+      <p class="form-note">Votre commande n'est enregistrée qu'une fois le message <b>envoyé</b> dans WhatsApp.</p>`;
+    foot.innerHTML = totalsBlock(o.mode) + `
+      <a class="btn btn--solid btn--block" id="sendWa" href="${waLink(o)}" target="_blank" rel="noopener">
+        <span>Envoyer sur WhatsApp
+          <svg class="arrow" width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 11 11 2M4 2h7v7"/></svg>
+        </span></a>`;
+    $('#backInfos').addEventListener('click', () => renderCart('infos'));
+    $('#sendWa').addEventListener('click', () => {
+      logOrder(o);
+      setTimeout(() => renderCart('done'), 700);
+    });
+    return;
+  }
+
+  /* ---- 2. coordonnées -------------------------------------------------- */
+  if (view === 'infos') {
+    const today = new Date().toISOString().slice(0, 10);
+    const mode = client.mode || 'livraison';
+    body.innerHTML = stepBar(2) + `
+      <button class="back-link" id="backToCart">← Retour au panier</button>
+      <form id="orderForm" novalidate>
+        <div class="field">
+          <label>Comment souhaitez-vous recevoir votre café ?</label>
+          <div class="opts opts--mode">
+            <button type="button" class="opt${mode === 'livraison' ? ' is-on' : ''}" data-mode="livraison">Livraison</button>
+            <button type="button" class="opt${mode === 'retrait' ? ' is-on' : ''}" data-mode="retrait">Retrait sur place</button>
+          </div>
+        </div>
+        <div class="field" data-for="nom"><label for="f-nom">Nom complet</label>
+          <input id="f-nom" name="nom" autocomplete="name" value="${(client.nom || '').replace(/"/g, '&quot;')}"></div>
+        <div class="field" data-for="tel"><label for="f-tel">Téléphone WhatsApp</label>
+          <input id="f-tel" name="tel" type="tel" inputmode="tel" autocomplete="tel" placeholder="77 123 45 67" value="${(client.tel || '').replace(/"/g, '&quot;')}"></div>
+        <div class="field" data-for="adresse" id="fieldAdresse"><label for="f-adr">Adresse de livraison</label>
+          <textarea id="f-adr" name="adresse" autocomplete="street-address" placeholder="Quartier, rue, point de repère">${client.adresse || ''}</textarea></div>
+        <div class="field-2">
+          <div class="field" data-for="date"><label for="f-date">Date souhaitée</label>
+            <input id="f-date" name="date" type="date" min="${today}" value="${client.date && client.date >= today ? client.date : today}"></div>
+          <div class="field" data-for="heure"><label for="f-heure">Heure</label>
+            <input id="f-heure" name="heure" type="time" value="${client.heure || '10:00'}"></div>
+        </div>
+        <div class="field"><label for="f-rem">Remarques (facultatif)</label>
+          <textarea id="f-rem" name="remarques" placeholder="Étage, point de repère, préférences…">${client.remarques || ''}</textarea></div>
+      </form>`;
+    foot.innerHTML = totalsBlock(mode) + `
+      <button class="btn btn--solid btn--block" id="toRecap"><span>Vérifier ma commande
+        <svg class="arrow" width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 11 11 2M4 2h7v7"/></svg>
+      </span></button>`;
+
+    const applyMode = m => {
+      client.mode = m;
+      $$('.opts--mode .opt').forEach(o => o.classList.toggle('is-on', o.dataset.mode === m));
+      $('#fieldAdresse').style.display = m === 'retrait' ? 'none' : '';
+      foot.querySelector('.totals').outerHTML = totalsBlock(m);
+    };
+    $$('.opts--mode .opt').forEach(o => o.addEventListener('click', () => applyMode(o.dataset.mode)));
+    applyMode(mode);
+    $('#backToCart').addEventListener('click', () => renderCart());
+    $('#toRecap').addEventListener('click', validateAndRecap);
+    $$('#orderForm input, #orderForm textarea').forEach(el =>
+      el.addEventListener('input', () => el.closest('.field')?.classList.remove('has-error')));
+    return;
+  }
+
+  /* ---- 1. panier vide -------------------------------------------------- */
   if (!cart.length) {
     body.innerHTML = `<div class="cart-empty">
         <svg viewBox="0 0 24 24"><path d="M6 8h12l1 12H5L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>
@@ -537,7 +704,8 @@ function renderCart(view) {
     return;
   }
 
-  body.innerHTML = cart.map((it, i) => `
+  /* ---- 1. panier ------------------------------------------------------- */
+  body.innerHTML = stepBar(1) + cart.map((it, i) => `
     <div class="citem" data-i="${i}" style="animation-delay:${i * 60}ms">
       <div class="citem__img"><img src="${it.img}" alt=""></div>
       <div>
@@ -554,15 +722,12 @@ function renderCart(view) {
       </div>
     </div>`).join('');
 
-  foot.innerHTML = `
-    <div class="totals">
-      <div><span>Sous-total</span><span>${money(cartTotal())}</span></div>
-      <div><span>Livraison</span><span>${CONFIG.shipping === null ? 'à confirmer' : money(CONFIG.shipping)}</span></div>
-      <div class="grand"><span>Total</span><b>${money(cartTotal() + (CONFIG.shipping || 0))}</b></div>
-    </div>
-    <button class="btn btn--solid btn--block" id="toCheckout"><span>Commander <svg class="arrow" width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 11 11 2M4 2h7v7"/></svg></span></button>`;
+  foot.innerHTML = totalsBlock(client.mode || 'livraison') + `
+    <button class="btn btn--solid btn--block" id="toCheckout"><span>Commander
+      <svg class="arrow" width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 11 11 2M4 2h7v7"/></svg>
+    </span></button>`;
 
-  $('#toCheckout').addEventListener('click', () => renderCart('checkout'));
+  $('#toCheckout').addEventListener('click', () => renderCart('infos'));
   $$('[data-d]', body).forEach(b => b.addEventListener('click', () => {
     const i = +b.dataset.ci;
     cart[i].qty = clamp(cart[i].qty + (+b.dataset.d), 1, 99);
@@ -580,6 +745,62 @@ function renderCart(view) {
   }));
 }
 
+/* --- validation du formulaire ------------------------------------------ */
+function fieldError(name, msg) {
+  const f = $(`.field[data-for="${name}"]`);
+  if (!f) return;
+  f.classList.add('has-error');
+  let e = $('.err', f);
+  if (!e) { e = document.createElement('em'); e.className = 'err'; f.appendChild(e); }
+  e.textContent = msg;
+}
+
+function validateAndRecap() {
+  const form = $('#orderForm');
+  const d = Object.fromEntries(new FormData(form).entries());
+  const mode = client.mode || 'livraison';
+  $$('.field.has-error').forEach(f => f.classList.remove('has-error'));
+
+  let first = null;
+  const fail = (name, msg) => { fieldError(name, msg); first = first || name; };
+
+  if (!d.nom || d.nom.trim().length < 2) fail('nom', 'Indiquez votre nom complet.');
+  const tel = normPhone(d.tel);
+  if (!tel) fail('tel', 'Numéro invalide. Exemple : 77 123 45 67');
+  if (mode !== 'retrait' && (!d.adresse || d.adresse.trim().length < 5))
+    fail('adresse', 'Indiquez où livrer (quartier, rue, point de repère).');
+  if (!d.date) fail('date', 'Choisissez une date.');
+  else if (d.date < new Date().toISOString().slice(0, 10)) fail('date', 'Cette date est déjà passée.');
+  if (!d.heure) fail('heure', 'Choisissez une heure.');
+
+  if (first) {
+    $(`.field[data-for="${first}"]`)?.scrollIntoView({ block: 'center', behavior: REDUCED ? 'auto' : 'smooth' });
+    toast('Merci de compléter les champs en rouge');
+    return;
+  }
+
+  client = { ...d, tel, mode };
+  save(CLIENT_KEY, client);
+
+  lastOrder = {
+    ref: newRef(),
+    at: new Date().toISOString(),
+    items: cart.map(i => ({ ...i })),
+    mode, nom: d.nom.trim(), tel,
+    adresse: (d.adresse || '').trim(),
+    date: d.date, heure: d.heure,
+    dateLisible: new Date(d.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }),
+    remarques: (d.remarques || '').trim(),
+    subtotal: subtotal(),
+    shipping: shippingFor(mode),
+    shipLabel: shipLabel(mode),
+    total: totalFor(mode)
+  };
+  save(LAST_KEY, lastOrder);
+  renderCart('recap');
+}
+
+/* --- ajout au panier ---------------------------------------------------- */
 function addToCart(product, qty, fromEl) {
   const found = cart.find(i => i.id === product.id);
   if (found) found.qty = clamp(found.qty + qty, 1, 99);
@@ -606,10 +827,10 @@ function flyToCart(srcImg) {
   ], { duration: 950, easing: 'cubic-bezier(.76,0,.24,1)' }).onfinish = () => el.remove();
 }
 
-const openCart = () => { document.body.classList.add('cart-open', 'is-locked'); renderCart(); setTimeout(() => $('#closeCart')?.focus(), 300); };
+const openCart = v => { document.body.classList.add('cart-open', 'is-locked'); renderCart(v); setTimeout(() => $('#closeCart')?.focus(), 300); };
 const closeCart = () => document.body.classList.remove('cart-open', 'is-locked');
 
-$('#cartBtn').addEventListener('click', openCart);
+$('#cartBtn').addEventListener('click', () => openCart());
 $('#closeCart').addEventListener('click', closeCart);
 $('#scrim').addEventListener('click', closeCart);
 addEventListener('keydown', e => { if (e.key === 'Escape') closeCart(); });
@@ -619,73 +840,8 @@ $('#addBtn').addEventListener('click', () => {
 });
 $('#buyNow').addEventListener('click', () => {
   addToCart(PRODUCTS[current], clamp(parseInt($('#qty').value, 10) || 1, 1, 99), $('.slide.is-on img'));
-  setTimeout(() => { openCart(); renderCart('checkout'); }, 260);
+  setTimeout(() => openCart('infos'), 260);
 });
-
-/* =========================================================================
-   14. ENVOI DE LA COMMANDE
-   ========================================================================= */
-function orderText(d) {
-  const lines = cart.map(i => `• ${i.brand} ${i.weight} (${i.name}) × ${i.qty} — ${money(i.qty * i.price)}`);
-  return [
-    'Bonjour Darou Minam Cafe, je passe commande :',
-    '',
-    ...lines,
-    '',
-    `Total produits : ${money(cartTotal())}`,
-    CONFIG.shipping === null ? 'Livraison : à confirmer' : `Livraison : ${money(CONFIG.shipping)}`,
-    '',
-    `Nom : ${d.nom}`,
-    `Téléphone : ${d.telephone}`,
-    `Adresse : ${d.adresse}`,
-    `Livraison souhaitée : ${d.date_livraison} à ${d.heure_livraison}`,
-    d.remarques ? `Remarques : ${d.remarques}` : ''
-  ].filter(Boolean).join('\n');
-}
-
-async function submitOrder() {
-  const form = $('#orderForm');
-  if (!form.reportValidity()) return;
-  const data = Object.fromEntries(new FormData(form).entries());
-  const btn = $('#submitOrder');
-  btn.disabled = true;
-  btn.querySelector('span').textContent = 'Envoi en cours…';
-
-  const payload = {
-    ...data,
-    commande: cart.map(i => `${i.brand} ${i.weight} x${i.qty}`).join(' | '),
-    details: cart.map(i => `${i.id}:${i.qty}`).join(','),
-    total: cartTotal(),
-    devise: CONFIG.currency,
-    source: 'site darouminam'
-  };
-
-  if (CONFIG.sheet) {
-    try {
-      await fetch(CONFIG.sheet, { method: 'POST', mode: 'no-cors', body: new URLSearchParams(payload) });
-    } catch (e) { /* la commande part quand même sur WhatsApp */ }
-  }
-
-  const url = `https://wa.me/${CONFIG.whatsapp}?text=${encodeURIComponent(orderText(data))}`;
-  const win = window.open(url, '_blank');
-
-  $('#drawerBody').innerHTML = `
-    <div class="done">
-      <div class="done__mark"><svg viewBox="0 0 30 30" fill="none"><path d="M6 15.5l6 6L24 9"/></svg></div>
-      <h3 style="font-family:var(--f-display);text-transform:uppercase;font-weight:400;margin:0">Commande envoyée.</h3>
-      <p style="color:var(--cream-dim);margin:0">Nous confirmons tout par WhatsApp. Si la fenêtre ne s'est pas ouverte, utilisez le bouton ci-dessous.</p>
-      <a class="btn btn--ghost" href="${url}" target="_blank" rel="noopener"><span>Ouvrir WhatsApp</span></a>
-    </div>`;
-  $('#drawerFoot').innerHTML = `<button class="btn btn--solid btn--block" id="newOrder"><span>Continuer mes achats</span></button>`;
-  $('#newOrder').addEventListener('click', () => { closeCart(); setTimeout(() => renderCart(), 600); });
-
-  cart = []; saveCart();
-  $('#cartCount').textContent = '0';
-  $('#drawerCount').textContent = '(0)';
-  renderCart('done');
-  toast('Commande transmise ✓');
-  if (!win) location.href = url;
-}
 
 /* =========================================================================
    15. AMBIANCE SONORE — la bande-son fournie, en boucle (58 s)
