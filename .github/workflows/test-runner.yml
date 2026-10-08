@@ -1,0 +1,7 @@
+name: Test runner
+on: push
+jobs:
+  bonjour:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Le runner fonctionne."
