@@ -104,6 +104,31 @@ puis coller l'URL `/exec` dans `CONFIG.sheet` (en haut de `assets/js/main.js`).
 Mettre `sheet: ''` désactive cette partie : la commande part alors uniquement
 sur WhatsApp.
 
+### Gmail ou Resend ?
+
+Par défaut l'e-mail part par **Gmail** (`MailApp`) : gratuit, rien à configurer,
+amplement suffisant pour être prévenu de ses commandes.
+
+`apps-script/Code.gs` sait aussi passer par **Resend** : il suffit de remplir
+`RESEND_API_KEY` et `RESEND_FROM` en haut du fichier. Utile le jour où vous
+voulez un e-mail qui part de `commandes@darouminam.sn` plutôt que de votre
+Gmail, ou envoyer une confirmation au client.
+
+Trois choses à savoir avant de basculer :
+
+- **La clé API ne doit jamais être mise dans le site.** `assets/js/` est public :
+  n'importe qui pourrait la lire et envoyer des e-mails en votre nom. Sa place
+  est dans le script Apps Script, qui s'exécute chez Google.
+- **Sans domaine vérifié**, Resend n'autorise que l'expéditeur
+  `onboarding@resend.dev`, et uniquement vers l'adresse du compte Resend.
+  Il faut donc un nom de domaine et quelques enregistrements DNS pour en
+  profiter vraiment.
+- **Offre gratuite** : 3 000 e-mails par mois, 100 par jour — largement de quoi
+  encaisser les commandes.
+
+Si Resend échoue (clé expirée, domaine non vérifié), le script bascule
+automatiquement sur Gmail : aucune commande n'est perdue.
+
 ## Champs envoyés au Google Apps Script
 
 Le script reçoit (en `application/x-www-form-urlencoded`) :
