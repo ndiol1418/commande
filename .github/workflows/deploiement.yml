@@ -1,0 +1,124 @@
+name: Déploiement sur le VPS
+
+# Se déclenche à chaque envoi de code sur la branche, ou à la main depuis
+# l'onglet Actions de GitHub.
+on:
+  push:
+    branches: [claude/site-boutique-motion-design-qdtr3t]
+    paths-ignore: ['README.md', 'apps-script/**']
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Installation complète (première fois) ou simple mise à jour"
+        required: true
+        default: update
+        type: choice
+        options: [update, installation]
+
+concurrency:
+  group: deploiement-vps
+  cancel-in-progress: false
+
+jobs:
+  deployer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Vérifier que les secrets sont présents
+        env:
+          HOTE: ${{ secrets.VPS_HOST }}
+          UTILISATEUR: ${{ secrets.VPS_USER }}
+          MDP: ${{ secrets.VPS_PASSWORD }}
+          CLE: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          manquant=""
+          [ -n "$HOTE" ]        || manquant="$manquant VPS_HOST"
+          [ -n "$UTILISATEUR" ] || manquant="$manquant VPS_USER"
+          [ -n "$MDP" ] || [ -n "$CLE" ] || manquant="$manquant VPS_PASSWORD|VPS_SSH_KEY"
+          if [ -n "$manquant" ]; then
+            echo "::error::Secrets manquants :$manquant"
+            echo "À ajouter dans Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+          echo "Secrets présents."
+
+      - name: Préparer l'accès SSH
+        env:
+          CLE: ${{ secrets.VPS_SSH_KEY }}
+          HOTE: ${{ secrets.VPS_HOST }}
+          PORT: ${{ secrets.VPS_PORT }}
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          if [ -n "$CLE" ]; then
+            printf '%s\n' "$CLE" > ~/.ssh/id_vps
+            chmod 600 ~/.ssh/id_vps
+            echo "AUTH=cle" >> "$GITHUB_ENV"
+          else
+            sudo apt-get update -qq && sudo apt-get install -y -qq sshpass
+            echo "AUTH=mdp" >> "$GITHUB_ENV"
+          fi
+          ssh-keyscan -p "${PORT:-22}" -H "$HOTE" >> ~/.ssh/known_hosts 2>/dev/null || true
+
+      - name: Déployer
+        env:
+          HOTE: ${{ secrets.VPS_HOST }}
+          UTILISATEUR: ${{ secrets.VPS_USER }}
+          PORT: ${{ secrets.VPS_PORT }}
+          SSHPASS: ${{ secrets.VPS_PASSWORD }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          OWNER_EMAIL: ${{ secrets.OWNER_EMAIL }}
+          DOMAINE: ${{ vars.DOMAINE || 'daaruminamcafe.com' }}
+          MODE: ${{ inputs.mode || 'auto' }}
+        run: |
+          set -euo pipefail
+          OPTIONS="-o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=$HOME/.ssh/known_hosts -o ConnectTimeout=20 -p ${PORT:-22}"
+          if [ "$AUTH" = "cle" ]; then
+            LANCER="ssh $OPTIONS -i $HOME/.ssh/id_vps $UTILISATEUR@$HOTE bash -s"
+          else
+            LANCER="sshpass -e ssh $OPTIONS $UTILISATEUR@$HOTE bash -s"
+          fi
+
+          # Le script distant est envoyé par l'entrée standard : les secrets
+          # n'apparaissent jamais dans la liste des processus du serveur.
+          $LANCER <<DISTANT
+          set -euo pipefail
+          export DEBIAN_FRONTEND=noninteractive
+          export RESEND_API_KEY='$RESEND_API_KEY'
+          export OWNER_EMAIL='$OWNER_EMAIL'
+          export DOMAINE='$DOMAINE'
+          export BRANCHE='claude/site-boutique-motion-design-qdtr3t'
+
+          MODE='$MODE'
+          if [ "\$MODE" = "auto" ]; then
+            if [ -x /opt/daaruminam/deploy/update.sh ] && systemctl list-unit-files | grep -q daaru-api; then
+              MODE=update
+            else
+              MODE=installation
+            fi
+          fi
+          echo "▸ mode : \$MODE"
+
+          if [ "\$MODE" = "installation" ]; then
+            command -v curl >/dev/null || { apt-get update -qq && apt-get install -y -qq curl; }
+            curl -fsSL "https://raw.githubusercontent.com/${{ github.repository }}/refs/heads/\$BRANCHE/deploy/install.sh" -o /tmp/install.sh
+            bash /tmp/install.sh
+          else
+            bash /opt/daaruminam/deploy/update.sh
+          fi
+          DISTANT
+
+      - name: Vérifier que le site répond
+        if: always()
+        env:
+          DOMAINE: ${{ vars.DOMAINE || 'daaruminamcafe.com' }}
+          HOTE: ${{ secrets.VPS_HOST }}
+        run: |
+          echo "### Résultat du déploiement" >> "$GITHUB_STEP_SUMMARY"
+          for cible in "https://$DOMAINE" "http://$DOMAINE" "http://$HOTE"; do
+            code=$(curl -s -o /dev/null -m 20 -w '%{http_code}' "$cible" || echo 000)
+            echo "- $cible → HTTP $code" | tee -a "$GITHUB_STEP_SUMMARY"
+            [ "$code" = "200" ] && break
+          done
+          sante=$(curl -s -m 20 "https://$DOMAINE/api/sante" || curl -s -m 20 "http://$HOTE/api/sante" || echo '{}')
+          echo "- API : \`$sante\`" | tee -a "$GITHUB_STEP_SUMMARY"

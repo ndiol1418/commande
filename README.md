@@ -67,7 +67,31 @@ différents de la même image de maquette), et le sachet visible porte l'étique
 « 250 g ». Une photo par format (`pack-250`, `pack-500`, `pack-1kg`) rendra la
 boutique juste.
 
-## Déploiement sur le VPS
+## Déploiement
+
+Deux chemins, au choix.
+
+### A. Automatique, par GitHub Actions (recommandé)
+
+GitHub se connecte en SSH au VPS et déploie à chaque envoi de code sur la
+branche, ou à la demande depuis l'onglet **Actions**.
+
+À renseigner une seule fois dans **Settings → Secrets and variables →
+Actions → New repository secret** :
+
+| Secret | Valeur |
+|---|---|
+| `VPS_HOST` | l'IP du serveur, ex. `72.62.91.222` |
+| `VPS_USER` | `root` |
+| `VPS_PASSWORD` | le mot de passe root (ou `VPS_SSH_KEY` : une clé privée, plus sûr) |
+| `RESEND_API_KEY` | la clé Resend |
+| `OWNER_EMAIL` | l'adresse qui reçoit les commandes |
+
+`VPS_PORT` est facultatif (22 par défaut). Le workflow détecte tout seul s'il
+faut une installation complète ou une simple mise à jour, puis vérifie que le
+site et l'API répondent.
+
+### B. À la main, sur le VPS
 
 Sur un Ubuntu 22.04 ou 24.04 neuf, en root :
 
