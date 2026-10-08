@@ -1,5 +1,5 @@
 /**
- * Darou Minam Cafe — réception des commandes du site
+ * Daaru Minam Cafe — réception des commandes du site
  * =================================================
  * Ce script reçoit chaque commande passée sur le site et :
  *   1. l'écrit dans une feuille Google Sheets ;
@@ -10,7 +10,7 @@
  *
  * INSTALLATION (5 minutes, une seule fois)
  * ----------------------------------------
- * 1. Créez un Google Sheets vide, nommez-le « Commandes Darou Minam ».
+ * 1. Créez un Google Sheets vide, nommez-le « Commandes Daaru Minam ».
  * 2. Menu  Extensions > Apps Script.
  * 3. Effacez le contenu de Code.gs et collez TOUT ce fichier à la place.
  * 4. Remplacez VOTRE-ADRESSE@gmail.com ci-dessous par votre vraie adresse.
@@ -51,7 +51,7 @@ var ONGLET = 'Commandes';
  * lisible par tout le monde. Sa place est ici, dans le script, côté serveur.
  */
 var RESEND_API_KEY = '';
-var RESEND_FROM = 'Darou Minam Cafe <commandes@votre-domaine.com>';
+var RESEND_FROM = 'Daaru Minam Cafe <commandes@votre-domaine.com>';
 
 /* ---- Code -------------------------------------------------------------- */
 
@@ -81,7 +81,7 @@ function doPost(e) {
 
 /* Permet de vérifier dans le navigateur que le script répond. */
 function doGet() {
-  return reponse_({ ok: true, message: 'Darou Minam Cafe — reception des commandes active.' });
+  return reponse_({ ok: true, message: 'Daaru Minam Cafe — reception des commandes active.' });
 }
 
 function feuilleCommandes_() {
@@ -127,7 +127,7 @@ function envoyerResend_(titre, p) {
 
 function texteBrut_(p) {
   return [
-    'Nouvelle commande sur le site Darou Minam Cafe.',
+    'Nouvelle commande sur le site Daaru Minam Cafe.',
     '',
     'Référence : ' + (p.reference || ''),
     'Nom       : ' + (p.nom || ''),
@@ -156,7 +156,7 @@ function html_(p) {
   return '' +
     '<div style="font-family:Helvetica,Arial,sans-serif;background:#f4ede4;padding:28px">' +
     '<div style="max-width:560px;margin:auto;background:#fff;border-top:4px solid #e2531c;padding:28px">' +
-    '<p style="margin:0 0 4px;letter-spacing:.22em;font-size:11px;color:#e2531c">DAROU MINAM CAFE</p>' +
+    '<p style="margin:0 0 4px;letter-spacing:.22em;font-size:11px;color:#e2531c">DAARU MINAM CAFE</p>' +
     '<h1 style="margin:0 0 20px;font-size:21px;color:#141211">Nouvelle commande ' + (p.reference || '') + '</h1>' +
     '<p style="margin:0 0 6px;font-size:13px;color:#8a8178">COMMANDE</p>' +
     '<p style="margin:0 0 20px;font-size:16px;color:#141211"><b>' + (p.commande || '') + '</b></p>' +

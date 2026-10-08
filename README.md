@@ -1,4 +1,4 @@
-# Darou Minam Cafe — site vitrine + boutique
+# Daaru Minam Cafe — site vitrine + boutique
 
 Site d'une seule page (HTML/CSS/JS, sans build ni dépendance) avec une boutique
 intégrée : choix du format, panier persistant, tunnel de commande et envoi de la
@@ -111,7 +111,7 @@ amplement suffisant pour être prévenu de ses commandes.
 
 `apps-script/Code.gs` sait aussi passer par **Resend** : il suffit de remplir
 `RESEND_API_KEY` et `RESEND_FROM` en haut du fichier. Utile le jour où vous
-voulez un e-mail qui part de `commandes@darouminam.sn` plutôt que de votre
+voulez un e-mail qui part de `commandes@daaruminam.sn` plutôt que de votre
 Gmail, ou envoyer une confirmation au client.
 
 Trois choses à savoir avant de basculer :

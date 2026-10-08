@@ -1,5 +1,5 @@
 /* =========================================================================
-   DAROU MINAM CAFE — boutique & motion
+   DAARU MINAM CAFE — boutique & motion
    ------------------------------------------------------------------------
    ⚙️  TOUT CE QUI SE MODIFIE FACILEMENT EST DANS LE BLOC "CONFIG" CI-DESSOUS
    ========================================================================= */
@@ -532,7 +532,7 @@ const newRef = () => 'DM-' + (Date.now().toString(36) + Math.random().toString(3
 function orderText(o) {
   const lignes = o.items.map(i => `• ${i.brand} ${i.weight} × ${i.qty} — ${money(i.qty * i.price)}`);
   return [
-    `Bonjour Darou Minam Cafe, je passe commande (réf. ${o.ref}) :`,
+    `Bonjour Daaru Minam Cafe, je passe commande (réf. ${o.ref}) :`,
     '',
     ...lignes,
     '',
