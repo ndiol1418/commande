@@ -8,10 +8,11 @@ const CONFIG = {
   /* Numéro WhatsApp qui reçoit les commandes (format international, sans +) */
   whatsapp: '221775368231',
 
-  /* Google Apps Script qui enregistre les commandes dans le tableur.
-     Mettre '' pour désactiver l'enregistrement (la commande partira
-     uniquement sur WhatsApp). */
-  sheet: 'https://script.google.com/macros/s/AKfycbw4G-tdzm46jpKPWWISkiO33YC75gMzZtbPulQSPErxKxtJxmtkuoswMvpn4GeDr5Oo/exec',
+  /* Adresse de l'API qui enregistre la commande, écrit le fichier Excel et
+     envoie les e-mails (dossier server/ de ce dépôt).
+     Mettre '' pour désactiver : la commande partira alors uniquement sur
+     WhatsApp. */
+  api: '/api/commande',
 
   currency: 'FCFA',
 
@@ -549,30 +550,26 @@ function orderText(o) {
 }
 const waLink = o => `https://wa.me/${CONFIG.whatsapp}?text=${encodeURIComponent(orderText(o))}`;
 
-/* --- enregistrement dans le tableur (sans bloquer la navigation) -------- */
+/* --- envoi à l'API (sans bloquer la navigation vers WhatsApp) ----------- */
 function logOrder(o) {
-  if (!CONFIG.sheet) return;
+  if (!CONFIG.api) return;
   const body = new URLSearchParams({
     reference: o.ref,
     nom: o.nom,
-    telephone: prettyPhone(o.tel),
+    telephone: o.tel,
+    email: o.email || '',
     mode: o.mode,
     adresse: o.mode === 'retrait' ? 'Retrait sur place' : o.adresse,
     date_livraison: o.date,
     heure_livraison: o.heure,
     remarques: o.remarques || '',
-    commande: o.items.map(i => `${i.brand} ${i.weight} x${i.qty}`).join(' | '),
     details: o.items.map(i => `${i.id}:${i.qty}`).join(','),
-    sous_total: o.subtotal,
-    livraison: o.shipping === null ? '' : o.shipping,
-    total: o.total,
-    devise: CONFIG.currency,
     source: location.hostname || 'site'
   });
   try {
-    if (navigator.sendBeacon && navigator.sendBeacon(CONFIG.sheet, body)) return;
+    if (navigator.sendBeacon && navigator.sendBeacon(CONFIG.api, body)) return;
   } catch (e) {}
-  try { fetch(CONFIG.sheet, { method: 'POST', mode: 'no-cors', keepalive: true, body }); } catch (e) {}
+  try { fetch(CONFIG.api, { method: 'POST', keepalive: true, body }); } catch (e) {}
 }
 
 /* --- vues du tiroir ----------------------------------------------------- */
@@ -605,6 +602,7 @@ function renderCart(view) {
         <h3>WhatsApp est ouvert.</h3>
         <p class="done__ref">Référence <b>${lastOrder.ref}</b></p>
         <p>Il ne reste qu'à <b>appuyer sur envoyer</b> dans WhatsApp : c'est ce message qui vaut commande.</p>
+        ${lastOrder.email ? `<p style="font-size:.86rem">Une confirmation part aussi par e-mail à ${lastOrder.email}.</p>` : ''}
         <a class="btn btn--ghost btn--block" href="${url}" target="_blank" rel="noopener"><span>Rouvrir WhatsApp</span></a>
         <button class="btn btn--ghost btn--block" id="copyOrder"><span>Copier ma commande</span></button>
       </div>`;
@@ -634,6 +632,7 @@ function renderCart(view) {
         <dl>
           <dt>Nom</dt><dd>${o.nom}</dd>
           <dt>Téléphone</dt><dd>${prettyPhone(o.tel)}</dd>
+          ${o.email ? `<dt>E-mail</dt><dd>${o.email}</dd>` : ''}
           <dt>${o.mode === 'retrait' ? 'Mode' : 'Adresse'}</dt><dd>${o.mode === 'retrait' ? 'Retrait sur place' : o.adresse}</dd>
           <dt>Quand</dt><dd>${o.dateLisible} à ${o.heure}</dd>
           ${o.remarques ? `<dt>Remarques</dt><dd>${o.remarques}</dd>` : ''}
@@ -671,6 +670,8 @@ function renderCart(view) {
           <input id="f-nom" name="nom" autocomplete="name" value="${(client.nom || '').replace(/"/g, '&quot;')}"></div>
         <div class="field" data-for="tel"><label for="f-tel">Téléphone WhatsApp</label>
           <input id="f-tel" name="tel" type="tel" inputmode="tel" autocomplete="tel" placeholder="77 123 45 67" value="${(client.tel || '').replace(/"/g, '&quot;')}"></div>
+        <div class="field" data-for="email"><label for="f-email">E-mail <span style="text-transform:none;letter-spacing:0">— pour recevoir la confirmation</span></label>
+          <input id="f-email" name="email" type="email" inputmode="email" autocomplete="email" placeholder="vous@exemple.com" value="${(client.email || '').replace(/"/g, '&quot;')}"></div>
         <div class="field" data-for="adresse" id="fieldAdresse"><label for="f-adr">Adresse de livraison</label>
           <textarea id="f-adr" name="adresse" autocomplete="street-address" placeholder="Quartier, rue, point de repère">${client.adresse || ''}</textarea></div>
         <div class="field-2">
@@ -777,6 +778,9 @@ function validateAndRecap() {
   if (!d.nom || d.nom.trim().length < 2) fail('nom', 'Indiquez votre nom complet.');
   const tel = normPhone(d.tel);
   if (!tel) fail('tel', 'Numéro invalide. Exemple : 77 123 45 67');
+  const email = (d.email || '').trim().toLowerCase();
+  if (email && !/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(email))
+    fail('email', 'Adresse e-mail invalide.');
   if (mode !== 'retrait' && (!d.adresse || d.adresse.trim().length < 5))
     fail('adresse', 'Indiquez où livrer (quartier, rue, point de repère).');
   if (!d.date) fail('date', 'Choisissez une date.');
@@ -796,7 +800,7 @@ function validateAndRecap() {
     ref: newRef(),
     at: new Date().toISOString(),
     items: cart.map(i => ({ ...i })),
-    mode, nom: d.nom.trim(), tel,
+    mode, nom: d.nom.trim(), tel, email,
     adresse: (d.adresse || '').trim(),
     date: d.date, heure: d.heure,
     dateLisible: new Date(d.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }),

@@ -10,7 +10,9 @@ assets/css/main.css     design system, mises en page et animations
 assets/js/main.js       boutique, panier, commande, animations pilotées au scroll
 assets/img/*.webp       photos (issues des maquettes)
 assets/audio/           la bande-son, coupée à 58 s et jouée en boucle
-apps-script/Code.gs     le script Google (gratuit) qui reçoit les commandes
+server/                 l'API des commandes : Excel + e-mails Resend
+deploy/                 installation sur le VPS (Nginx, systemd, HTTPS)
+apps-script/Code.gs     variante sans VPS : Google Sheets + Gmail
 assets/fonts/           Anton + Space Grotesk auto-hébergées (pas d'appel Google)
 baobab.html             l'ancien formulaire de commande Baobab, conservé tel quel
 ```
@@ -65,6 +67,55 @@ différents de la même image de maquette), et le sachet visible porte l'étique
 « 250 g ». Une photo par format (`pack-250`, `pack-500`, `pack-1kg`) rendra la
 boutique juste.
 
+## Déploiement sur le VPS
+
+Sur un Ubuntu 22.04 ou 24.04 neuf, en root :
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ndiol1418/commande/refs/heads/claude/site-boutique-motion-design-qdtr3t/deploy/install.sh -o /tmp/install.sh
+bash /tmp/install.sh
+```
+
+Le script demande la clé Resend et l'adresse e-mail, puis installe Nginx,
+Node 22, l'API, le service systemd, le pare-feu et le certificat HTTPS. Il
+peut être relancé sans danger. Pour les mises en ligne suivantes :
+
+```bash
+bash /opt/daaruminam/deploy/update.sh
+```
+
+Points de contrôle :
+
+| | |
+|---|---|
+| État de l'API | `curl localhost:8787/api/sante` |
+| Journal en direct | `journalctl -u daaru-api -f` |
+| Fichier Excel | `https://daaruminamcafe.com/api/export?cle=JETON` |
+| Réglages | `/opt/daaruminam/server/.env` (chmod 600) |
+| Commandes reçues | `/opt/daaruminam/server/data/` (xlsx + csv) |
+
+Le DNS doit pointer sur le VPS **avant** d'obtenir le certificat : deux
+enregistrements A, `daaruminamcafe.com` et `www`, vers l'IP du serveur.
+
+### L'API
+
+`server/` est un service Node sans framework, une seule dépendance (exceljs).
+
+- `POST /api/commande` enregistre la commande, ajoute une ligne au fichier
+  Excel, envoie l'e-mail à la boutique (avec le .xlsx joint) et la
+  confirmation au client.
+- `GET /api/sante` état du service.
+- `GET /api/export?cle=…` télécharge le fichier Excel.
+
+Deux garde-fous : **les prix sont recalculés côté serveur** à partir de
+`CATALOGUE` dans `server/src/config.js` — un panier trafiqué dans le
+navigateur n'a aucun effet — et la commande est **écrite avant** l'envoi des
+e-mails, pour qu'une panne de Resend ne fasse jamais perdre une commande.
+Chaque commande est aussi ajoutée à un CSV de secours.
+
+⚠️ Si vous changez les prix dans `assets/js/main.js`, changez-les aussi dans
+`server/src/config.js`.
+
 ## Comment arrivent les commandes (et pourquoi c'est gratuit)
 
 Le tunnel compte trois étapes : **Panier → Vos infos → Validation**, puis le
@@ -103,6 +154,21 @@ coller le script, déployer en application web accessible à « tout le monde »
 puis coller l'URL `/exec` dans `CONFIG.sheet` (en haut de `assets/js/main.js`).
 Mettre `sheet: ''` désactive cette partie : la commande part alors uniquement
 sur WhatsApp.
+
+### Vérifier le domaine dans Resend
+
+Resend n'accepte d'envoyer depuis `commandes@daaruminamcafe.com` qu'une fois
+le domaine vérifié. Le script d'installation affiche les enregistrements DNS à
+ajouter ; on peut aussi le relancer seul :
+
+```bash
+RESEND_API_KEY=re_... node /opt/daaruminam/deploy/resend-domaine.mjs daaruminamcafe.com
+```
+
+Tant que ce n'est pas fait, mettez `MAIL_FROM=Daaru Minam Cafe
+<onboarding@resend.dev>` dans `server/.env` : cet expéditeur de test ne peut
+écrire qu'à l'adresse du compte Resend, ce qui suffit pour recevoir ses propres
+commandes mais pas pour confirmer au client.
 
 ### Gmail ou Resend ?
 
