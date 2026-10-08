@@ -10,7 +10,7 @@
  * 1. Créez un Google Sheets vide, nommez-le « Commandes Darou Minam ».
  * 2. Menu  Extensions > Apps Script.
  * 3. Effacez le contenu de Code.gs et collez TOUT ce fichier à la place.
- * 4. Remplacez l'adresse ci-dessous par la vôtre (ligne EMAIL).
+ * 4. Remplacez VOTRE-ADRESSE@gmail.com ci-dessous par votre vraie adresse.
  * 5. Cliquez sur « Déployer » > « Nouveau déploiement » :
  *       Type        : Application web
  *       Exécuter en tant que : moi
@@ -23,7 +23,7 @@
  */
 
 /* ⚠️ Mettez ici l'adresse qui doit recevoir les commandes. */
-var EMAIL = 'lomouhamed1418@gmail.com';
+var EMAIL = 'VOTRE-ADRESSE@gmail.com';
 
 /* Nom de l'onglet où sont écrites les commandes. */
 var ONGLET = 'Commandes';

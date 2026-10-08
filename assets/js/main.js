@@ -6,7 +6,7 @@
 
 const CONFIG = {
   /* Numéro WhatsApp qui reçoit les commandes (format international, sans +) */
-  whatsapp: '221786156206',
+  whatsapp: '221775368231',
 
   /* Google Apps Script qui enregistre les commandes dans le tableur.
      Mettre '' pour désactiver l'enregistrement (la commande partira
@@ -20,14 +20,15 @@ const CONFIG = {
   shipping: null
 };
 
-/* ⚠️  PRIX À AJUSTER — ce sont des valeurs de départ. */
+/* Catalogue : pour ajouter un format, ajoutez un objet dans cette liste.
+   Le carrousel, les boutons de format et le panier suivent automatiquement. */
 const PRODUCTS = [
   {
     id: 'touba-250',
     brand: 'Café Touba',
     name: 'Le format découverte',
     weight: '250 g',
-    price: 3000,
+    price: 1625,
     desc: 'Café torréfié et diar. Le format pour découvrir le rituel.',
     img: 'assets/img/pack-250.webp'
   },
@@ -36,9 +37,18 @@ const PRODUCTS = [
     brand: 'Café Touba',
     name: 'Le format partage',
     weight: '500 g',
-    price: 5500,
+    price: 3250,
     desc: 'Café torréfié et diar. Le format des maisons où le café circule.',
     img: 'assets/img/pack-500.webp'
+  },
+  {
+    id: 'touba-1kg',
+    brand: 'Café Touba',
+    name: 'Le format maison',
+    weight: '1 kg',
+    price: 6500,
+    desc: 'Café torréfié et diar. Le format des grandes tablées et des professionnels.',
+    img: 'assets/img/pack-1kg.webp'
   }
 ];
 

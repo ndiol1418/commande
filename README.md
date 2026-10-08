@@ -31,27 +31,27 @@ Tout est au début de `assets/js/main.js`.
 
 ```js
 const CONFIG = {
-  whatsapp: '221786156206',   // format international, sans le +
+  whatsapp: '221775368231',   // format international, sans le +
   sheet: 'https://script.google.com/macros/s/.../exec',  // '' pour désactiver
   currency: 'FCFA',
   shipping: null              // null = « à confirmer », ou un nombre (ex. 1000)
 };
 ```
 
-### 2. Produits et prix  ⚠️ à ajuster
+### 2. Produits et prix
 
 ```js
 const PRODUCTS = [
   { id:'touba-250', brand:'Café Touba', name:'Le format découverte',
-    weight:'250 g', price:3000, desc:'…', img:'assets/img/pack-250.webp' },
+    weight:'250 g', price:1625, desc:'…', img:'assets/img/pack-250.webp' },
   …
 ];
 ```
 
-Les prix actuels (3 000 / 5 500 FCFA) sont des valeurs de départ : il suffit de
-changer `price`. Ajouter un produit = ajouter un objet dans la liste ; le
-carrousel, les boutons de format, le compteur « 01 / 02 » et le panier se mettent
-à jour tout seuls.
+Prix en vigueur : **250 g — 1 625 FCFA**, **500 g — 3 250 FCFA**,
+**1 kg — 6 500 FCFA**. Pour les changer, modifiez `price`. Ajouter un format =
+ajouter un objet dans la liste ; le carrousel, les boutons de format, le
+compteur « 01 / 03 » et le panier se mettent à jour tout seuls.
 
 ### 3. Photos
 
@@ -59,6 +59,11 @@ Remplacer les fichiers dans `assets/img/` en gardant les mêmes noms, ou changer
 les chemins dans `index.html`. Les images actuelles sont des recadrages des
 maquettes ; dès que les vraies photos produit sont disponibles, elles prennent
 leur place sans toucher au code.
+
+⚠️ Les trois formats partagent aujourd'hui la même photo de paquet (cadrages
+différents de la même image de maquette), et le sachet visible porte l'étiquette
+« 250 g ». Une photo par format (`pack-250`, `pack-500`, `pack-1kg`) rendra la
+boutique juste.
 
 ## Comment arrivent les commandes (et pourquoi c'est gratuit)
 
