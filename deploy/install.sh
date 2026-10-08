@@ -24,6 +24,15 @@ rouge() { printf '\033[0;31m  ✗ %s\033[0m\n' "$*" >&2; }
 [ "$(id -u)" -eq 0 ] || { rouge "Lancez ce script en root."; exit 1; }
 
 # ---------------------------------------------------------------- secrets ---
+# Relance : on reprend les valeurs déjà enregistrées plutôt que de redemander.
+if [ -f /opt/daaruminam/server/.env ]; then
+  lire_env() { grep -m1 "^$1=" /opt/daaruminam/server/.env | cut -d= -f2- || true; }
+  : "${RESEND_API_KEY:=$(lire_env RESEND_API_KEY)}"
+  : "${OWNER_EMAIL:=$(lire_env OWNER_EMAIL)}"
+  : "${EXPORT_TOKEN:=$(lire_env EXPORT_TOKEN)}"
+  [ -n "${RESEND_API_KEY:-}" ] && vert "réglages repris de .env"
+fi
+
 if [ -z "${RESEND_API_KEY:-}" ]; then
   read -rsp "Clé API Resend (re_...) : " RESEND_API_KEY; echo
 fi
@@ -108,7 +117,29 @@ bleu "Nginx"
 sed "s/daaruminamcafe\.com/$DOMAINE/g" "$APP/deploy/nginx.conf" > /etc/nginx/sites-available/daaruminam
 ln -sf /etc/nginx/sites-available/daaruminam /etc/nginx/sites-enabled/daaruminam
 rm -f /etc/nginx/sites-enabled/default
-nginx -t >/dev/null 2>&1 && systemctl reload nginx && vert "nginx rechargé" || { rouge "configuration nginx invalide"; nginx -t; exit 1; }
+
+if ! nginx -t >/tmp/nginx-test.log 2>&1; then
+  rouge "configuration nginx invalide :"
+  cat /tmp/nginx-test.log
+  exit 1
+fi
+vert "configuration valide"
+
+systemctl enable nginx >/dev/null 2>&1 || true
+if systemctl is-active --quiet nginx; then
+  systemctl reload nginx && vert "nginx rechargé"
+else
+  systemctl restart nginx >/dev/null 2>&1 || true
+  if systemctl is-active --quiet nginx; then
+    vert "nginx démarré"
+  else
+    rouge "nginx refuse de démarrer. Détail :"
+    journalctl -u nginx -n 20 --no-pager 2>/dev/null || true
+    echo "  Qui occupe les ports 80 et 443 :"
+    ss -ltnp 2>/dev/null | grep -E ":80 |:443 " || echo "    personne"
+    exit 1
+  fi
+fi
 
 # ------------------------------------------------------------------- pare-feu
 ufw allow 'Nginx Full' >/dev/null 2>&1 || true
